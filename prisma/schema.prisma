@@ -1,0 +1,43 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  imageUrl    String
+  createdAt   DateTime    @default(now())
+  OrderItem   OrderItem[]
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  email         String
+  fullName      String
+  addressLine   String
+  city          String
+  postalCode    String
+  countryCode   String
+  amount        Int
+  status        String      @default("pending")
+  createdAt     DateTime    @default(now())
+  
+  // Add this opposite relation field:
+  items         OrderItem[] 
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
