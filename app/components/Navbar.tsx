@@ -44,7 +44,7 @@ export default function Navbar() {
 
   return (
     <nav className="border-b border-gray-800 p-4 max-w-6xl mx-auto flex justify-between items-center">
-      <Link href="/" className="font-bold text-xl">Store</Link>
+      <Link href="/" className="font-bold text-xl">Velvet Store</Link>
       
       {/* Unified container handling the hover state for both button and dropdown */}
       <div 
