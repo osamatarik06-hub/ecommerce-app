@@ -1,16 +1,34 @@
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { PrismaClient } from '@prisma/client';
 import { Resend } from 'resend';
+import { Paddle } from '@paddle/paddle-node';
 
 const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
+const paddle = new Paddle(process.env.PADDLE_API_KEY || '');
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const headerList = await headers();
+    const signature = headerList.get('Paddle-Signature');
+    const secretKey = process.env.PADDLE_WEBHOOK_SECRET || '';
 
-    const eventType = body.event_type;
-    const data = body.data;
+    // 1. Read raw text so cryptographic signature validation matches
+    const rawBody = await request.text();
+
+    let eventData;
+
+    try {
+      // 2. Verify signature using Paddle SDK (Fixes the 401 Error)
+      eventData = paddle.webhooks.unmarshal(rawBody, secretKey, signature || '');
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err?.message);
+      return NextResponse.json({ error: 'Signature verification failed' }, { status: 401 });
+    }
+
+    const eventType = eventData.eventType;
+    const data: any = eventData.data;
 
     if (eventType === 'transaction.completed') {
       const customerEmail = data.customer?.email || data.billing_details?.email || 'delivered@resend.dev';
@@ -21,7 +39,6 @@ export async function POST(request: Request) {
       const amount = isNaN(parsedAmount) ? undefined : parsedAmount;
       
       const address = data.address || data.billing_address || {};
-
       const customData = data.custom_data || {};
       const orderId = customData.order_id;
       const userId = customData.userId || null;
@@ -29,7 +46,6 @@ export async function POST(request: Request) {
       let savedOrder;
 
       if (orderId) {
-        // Update existing pending order to completed
         savedOrder = await prisma.order.update({
           where: { id: orderId },
           data: {
@@ -43,7 +59,6 @@ export async function POST(request: Request) {
           },
         });
       } else {
-        // Fallback create if order_id wasn't passed
         savedOrder = await prisma.order.create({
           data: {
             userId: userId,
@@ -59,7 +74,6 @@ export async function POST(request: Request) {
         });
       }
 
-      // Automatically dispatch confirmation email via Resend hardcoded to your sandbox address
       try {
         await resend.emails.send({
           from: 'VELVET Support <onboarding@resend.dev>',
