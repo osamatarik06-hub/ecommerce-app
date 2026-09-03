@@ -38,20 +38,32 @@ export async function POST(request: Request) {
       const amount = Number(rawAmount) || 0;
       const lineItems = data.items || data.details?.line_items || [];
 
-      // Build safe order items creation array, filtering out undefined product IDs
+      // Build safe order items creation array with auto-seeding for products if missing
       const orderItemsData = [];
       for (const item of lineItems) {
-        // Look for product id via multiple fallback fields
         const prodId = item.product?.id || item.product_id || item.price_id;
+        const productName = item.product?.name || item.description || "Custom Product";
+        const unitPrice = Number(item.unit_price?.amount || item.price?.unit_price?.amount || 0);
 
         if (prodId) {
-          const productExists = await prisma.product.findUnique({ where: { id: prodId } });
-          if (productExists) {
-            orderItemsData.push({
-              quantity: item.quantity || 1,
-              product: { connect: { id: prodId } }
+          let product = await prisma.product.findUnique({ where: { id: prodId } });
+          
+          if (!product) {
+            product = await prisma.product.create({
+              data: {
+                id: prodId,
+                name: productName,
+                description: item.description || "Imported from Paddle",
+                price: unitPrice,
+                imageUrl: item.product?.image_url || "https://placehold.co/400"
+              }
             });
           }
+
+          orderItemsData.push({
+            quantity: item.quantity || 1,
+            product: { connect: { id: product.id } }
+          });
         }
       }
 
