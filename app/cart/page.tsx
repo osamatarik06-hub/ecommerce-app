@@ -21,13 +21,44 @@ export default function CartPage() {
     countryCode: 'US',
   });
 
-  const loadCart = () => {
+  const getUserId = () => {
+    if (session?.user) {
+      return (session.user as any).id || (session.user as any).userId;
+    }
+    return null;
+  };
+
+  const loadCart = async () => {
+    const userId = getUserId();
+    
+    if (userId) {
+      try {
+        const res = await fetch(`/api/cart?userId=${userId}`);
+        const data = await res.json();
+        if (data.success) {
+          // Format database CartItem relations to match local render expectations (item.id = product.id)
+          const formatted = data.items.map((ci: any) => ({
+            id: ci.product.id,
+            name: ci.product.name,
+            price: ci.product.price,
+            quantity: ci.quantity,
+            imageUrl: ci.product.imageUrl,
+          }));
+          setCartItems(formatted);
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to fetch DB cart', e);
+      }
+    }
+
+    // Fallback to localStorage if unauthenticated or fetch fails
     const savedCart = localStorage.getItem('cart_items');
     if (savedCart) {
       try {
         setCartItems(JSON.parse(savedCart));
       } catch (e) {
-        console.error('Failed to parse cart');
+        console.error('Failed to parse local cart');
       }
     }
   };
@@ -39,11 +70,16 @@ export default function CartPage() {
     }).then((paddleInstance) => {
       if (paddleInstance) setPaddle(paddleInstance);
     });
+  }, []);
 
-    loadCart();
+  // Reload cart whenever session loads or changes
+  useEffect(() => {
+    if (status !== 'loading') {
+      loadCart();
+    }
     window.addEventListener('cartUpdated', loadCart);
     return () => window.removeEventListener('cartUpdated', loadCart);
-  }, []);
+  }, [status, session]);
 
   // Pre-fill user details safely using optional chaining
   useEffect(() => {
@@ -56,24 +92,50 @@ export default function CartPage() {
     }
   }, [session]);
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = async (id: string, delta: number) => {
     let updated = [...cartItems];
     const index = updated.findIndex((item) => item.id === id);
+    let newQty = 0;
+
     if (index > -1) {
-      updated[index].quantity += delta;
-      if (updated[index].quantity <= 0) {
+      newQty = updated[index].quantity + delta;
+      updated[index].quantity = newQty;
+      if (newQty <= 0) {
         updated = updated.filter((item) => item.id !== id);
       }
     }
+
     setCartItems(updated);
-    localStorage.setItem('cart_items', JSON.stringify(updated));
+
+    const userId = getUserId();
+    if (userId) {
+      await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, productId: id, quantity: newQty }),
+      });
+    } else {
+      localStorage.setItem('cart_items', JSON.stringify(updated));
+    }
+
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
-  const removeItem = (id: string) => {
+  const removeItem = async (id: string) => {
     const updated = cartItems.filter((item) => item.id !== id);
     setCartItems(updated);
-    localStorage.setItem('cart_items', JSON.stringify(updated));
+
+    const userId = getUserId();
+    if (userId) {
+      await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, productId: id, quantity: 0 }),
+      });
+    } else {
+      localStorage.setItem('cart_items', JSON.stringify(updated));
+    }
+
     window.dispatchEvent(new Event('cartUpdated'));
   };
 
@@ -97,19 +159,17 @@ export default function CartPage() {
         body: JSON.stringify({
           items: cartItems,
           shippingAddress: formData,
-          userId: session?.user ? (session.user as any).id : undefined,
+          userId: getUserId(),
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // Open checkout and pass customData with the database orderId 
-      // so the webhook can map the incoming payment to the correct record.
       paddle.Checkout.open({
         transactionId: data.transactionId,
         customData: {
-          order_id: data.orderId, // <--- Crucial fix for real shopping webhooks
+          order_id: data.orderId,
         },
         settings: {
           displayMode: 'overlay',
@@ -136,9 +196,14 @@ export default function CartPage() {
           ) : (
             cartItems.map((item) => (
               <div key={item.id} className="border-b border-gray-800 pb-4 flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold">{item.name}</h2>
-                  <p className="text-gray-400">${(item.price / 100).toFixed(2)} each</p>
+                <div className="flex items-center space-x-4">
+                  {item.imageUrl && (
+                    <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-lg" />
+                  )}
+                  <div>
+                    <h2 className="text-xl font-semibold">{item.name}</h2>
+                    <p className="text-gray-400">${(item.price / 100).toFixed(2)} each</p>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-2">
@@ -187,7 +252,7 @@ export default function CartPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <input type="text" name="city" required placeholder="City" value={formData.city} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
-                  <input type="text" name="postalCode" required placeholder="Postal Code" value={formData.postalCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 code text-white" />
+                  <input type="text" name="postalCode" required placeholder="Postal Code" value={formData.postalCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
                   <input type="text" name="countryCode" required maxLength={2} placeholder="Country (e.g. US)" value={formData.countryCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white uppercase" />
                 </div>
 

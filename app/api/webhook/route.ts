@@ -28,17 +28,16 @@ export async function POST(request: Request) {
     const data: any = eventData.data;
 
     if (eventType === 'transaction.completed') {
-      const customData = data.custom_data || {};
-      const orderId = customData.order_id;
-      const userId = customData.userId || null;
-      
+      const customData = data.custom_data || data.passthrough || (eventData as any).custom_data || {};
+      let orderId = customData.order_id || data.order_id;
+      const userId = customData.userId || data.userId;
+
       const customerEmail = data.customer?.email || customData.email || 'customer@example.com';
       const customerName = data.customer?.name || 'Valued Customer';
       const rawAmount = data.details?.totals?.total || data.total || 0;
       const amount = Number(rawAmount) || 0;
       const lineItems = data.items || data.details?.line_items || [];
 
-      // Build safe order items creation array with auto-seeding for products if missing
       const orderItemsData = [];
       for (const item of lineItems) {
         const prodId = item.product?.id || item.product_id || item.price_id;
@@ -67,39 +66,48 @@ export async function POST(request: Request) {
         }
       }
 
-      let savedOrder;
+      let targetOrder = null;
+
+      // 1. Try finding by explicit orderId
       if (orderId) {
-        const existingOrder = await prisma.order.findUnique({ where: { id: orderId } });
-        if (existingOrder) {
-          savedOrder = await prisma.order.update({
-            where: { id: orderId },
-            data: {
-              status: 'completed',
-              amount: amount,
-              email: customerEmail,
-              fullName: customerName,
-              items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
+        targetOrder = await prisma.order.findUnique({ where: { id: orderId } });
+      }
+
+      // 2. Fallback: Find user's most recent pending order
+      if (!targetOrder && userId) {
+        targetOrder = await prisma.order.findFirst({
+          where: { userId: userId, status: { in: ['pending', 'PENDING', 'Pending'] } },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (targetOrder) orderId = targetOrder.id;
+      }
+
+      // 3. Fallback: Find by email and pending status
+      if (!targetOrder && customerEmail) {
+        targetOrder = await prisma.order.findFirst({
+          where: { email: customerEmail, status: { in: ['pending', 'PENDING', 'Pending'] } },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (targetOrder) orderId = targetOrder.id;
+      }
+
+      if (targetOrder && orderId) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'completed',
+            amount: amount,
+            email: customerEmail,
+            fullName: customerName,
+            items: {
+              deleteMany: {},
+              create: orderItemsData
             }
-          });
-        } else {
-          savedOrder = await prisma.order.create({
-            data: {
-              id: orderId,
-              userId: userId,
-              email: customerEmail,
-              fullName: customerName,
-              amount: amount,
-              status: 'completed',
-              addressLine: 'N/A',
-              city: 'N/A',
-              postalCode: 'N/A',
-              countryCode: 'US',
-              items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
-            }
-          });
-        }
+          }
+        });
+        console.log(`Webhook successfully updated order ${orderId} to completed.`);
       } else {
-        savedOrder = await prisma.order.create({
+        await prisma.order.create({
           data: {
             userId: userId,
             email: customerEmail,
@@ -113,6 +121,7 @@ export async function POST(request: Request) {
             items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
           }
         });
+        console.log('Webhook created new completed order via fallback.');
       }
 
       return NextResponse.json({ success: true, received: true });

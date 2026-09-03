@@ -15,6 +15,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   orders    Order[]  
+  cartItems CartItem[]
 }
 
 model Product {
@@ -25,6 +26,20 @@ model Product {
   imageUrl    String
   createdAt   DateTime    @default(now())
   OrderItem   OrderItem[]
+  cartItems   CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
 }
 
 model Order {
@@ -39,7 +54,6 @@ model Order {
   status       String      @default("pending")
   createdAt    DateTime    @default(now())
   
-  // Optional link to a registered user account
   userId       String?
   user         User?       @relation(fields: [userId], references: [id])
   

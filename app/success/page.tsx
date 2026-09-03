@@ -8,6 +8,12 @@ export default function SuccessPage() {
     // Clear the local cart items and update the navbar badge count
     localStorage.removeItem('cart_items');
     window.dispatchEvent(new Event('cartUpdated'));
+
+    // Automatically trigger the completion helper and log the result
+    fetch('/api/orders/complete-latest', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => console.log('Order update result:', data))
+      .catch(err => console.error('Fetch error:', err));
   }, []);
 
   return (

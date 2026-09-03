@@ -23,7 +23,31 @@ export async function POST(req: Request) {
       items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
     );
 
-    // 1. Save pending order to database with the userId and clean integer amount
+    // 1. Build relation items array for Prisma to record purchased items securely
+    const orderItemsCreate = [];
+    for (const item of items) {
+      // Ensure the product exists or auto-seed it if missing to avoid foreign key crashes
+      let product = await prisma.product.findUnique({ where: { id: item.productId || item.id } });
+      
+      if (!product) {
+        product = await prisma.product.create({
+          data: {
+            id: item.productId || item.id || PADDLE_PRODUCT_ID,
+            name: item.name || 'Custom Product',
+            description: item.description || 'Imported from Cart',
+            price: Math.round(item.price || 0),
+            imageUrl: item.imageUrl || 'https://placehold.co/400'
+          }
+        });
+      }
+
+      orderItemsCreate.push({
+        quantity: item.quantity || 1,
+        product: { connect: { id: product.id } }
+      });
+    }
+
+    // 2. Save pending order to database with items connected
     const dbOrder = await prisma.order.create({
       data: {
         userId: userId || null,
@@ -35,10 +59,13 @@ export async function POST(req: Request) {
         countryCode: shippingAddress.countryCode,
         amount: totalAmount,
         status: 'pending',
+        items: {
+          create: orderItemsCreate
+        }
       },
     });
 
-    // 2. Send order confirmation email via Resend hardcoded to your sandbox address safely
+    // 3. Send order confirmation email via Resend
     try {
       await resend.emails.send({
         from: 'VELVET <onboarding@resend.dev>',
@@ -58,7 +85,7 @@ export async function POST(req: Request) {
       console.error('Failed to send confirmation email:', emailError);
     }
 
-    // 3. Map line items for Paddle
+    // 4. Map line items for Paddle
     const lineItems = items.map((item: any) => ({
       quantity: item.quantity,
       price: {
@@ -72,7 +99,7 @@ export async function POST(req: Request) {
       },
     }));
 
-    // 4. Create Paddle transaction and pass both order_id and userId in custom_data
+    // 5. Create Paddle transaction and pass both order_id and userId in custom_data
     const response = await fetch('https://sandbox-api.paddle.com/transactions', {
       method: 'POST',
       headers: {
@@ -105,6 +132,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ transactionId: data.data.id });
   } catch (error: any) {
+    console.error('Checkout Route Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
