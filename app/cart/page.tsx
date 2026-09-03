@@ -45,13 +45,13 @@ export default function CartPage() {
     return () => window.removeEventListener('cartUpdated', loadCart);
   }, []);
 
-  // Pre-fill user details if logged in
+  // Pre-fill user details safely using optional chaining
   useEffect(() => {
     if (session?.user) {
       setFormData((prev) => ({
         ...prev,
-        fullName: session.user.name || prev.fullName,
-        email: session.user.email || prev.email,
+        fullName: session.user?.name || prev.fullName,
+        email: session.user?.email || prev.email,
       }));
     }
   }, [session]);
@@ -97,7 +97,7 @@ export default function CartPage() {
         body: JSON.stringify({
           items: cartItems,
           shippingAddress: formData,
-          userId: session?.user?.id,
+          userId: session?.user ? (session.user as any).id : undefined,
         }),
       });
 
@@ -182,7 +182,7 @@ export default function CartPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <input type="text" name="city" required placeholder="City" value={formData.city} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
-                  <input type="text" name="postalCode" required placeholder="Postal Code" value={formData.postalCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
+                  <input type="text" name="postalCode" required placeholder="Postal Code" value={formData.postalCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 code text-white" />
                   <input type="text" name="countryCode" required maxLength={2} placeholder="Country (e.g. US)" value={formData.countryCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white uppercase" />
                 </div>
 
