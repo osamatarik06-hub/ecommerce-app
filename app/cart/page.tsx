@@ -104,8 +104,13 @@ export default function CartPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      // Open checkout and pass customData with the database orderId 
+      // so the webhook can map the incoming payment to the correct record.
       paddle.Checkout.open({
         transactionId: data.transactionId,
+        customData: {
+          order_id: data.orderId, // <--- Crucial fix for real shopping webhooks
+        },
         settings: {
           displayMode: 'overlay',
           theme: 'dark',
