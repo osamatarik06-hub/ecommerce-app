@@ -14,14 +14,11 @@ export async function POST(request: Request) {
     const signature = headerList.get('Paddle-Signature');
     const secretKey = process.env.PADDLE_WEBHOOK_SECRET || '';
 
-    // 1. Read raw text so cryptographic signature validation matches
     const rawBody = await request.text();
-
     let eventData;
 
     try {
-      // 2. Verify signature using Paddle SDK (Fixes the 401 Error)
-      eventData = paddle.webhooks.unmarshal(rawBody, secretKey, signature || '');
+      eventData = await paddle.webhooks.unmarshal(rawBody, secretKey, signature || '');
     } catch (err: any) {
       console.error('Webhook signature verification failed:', err?.message);
       return NextResponse.json({ error: 'Signature verification failed' }, { status: 401 });
@@ -29,6 +26,10 @@ export async function POST(request: Request) {
 
     const eventType = eventData.eventType;
     const data: any = eventData.data;
+
+    // Debug log to inspect incoming custom_data in Vercel logs
+    console.log('Incoming Webhook Event:', eventType);
+    console.log('Incoming custom_data:', JSON.stringify(data.custom_data));
 
     if (eventType === 'transaction.completed') {
       const customerEmail = data.customer?.email || data.billing_details?.email || 'delivered@resend.dev';
@@ -39,39 +40,87 @@ export async function POST(request: Request) {
       const amount = isNaN(parsedAmount) ? undefined : parsedAmount;
       
       const address = data.address || data.billing_address || {};
-      const customData = data.custom_data || {};
-      const orderId = customData.order_id;
-      const userId = customData.userId || null;
+      
+      // Look up order ID across all possible locations in Paddle v2 payload
+      const customData = data.custom_data || data.checkout?.custom_data || {};
+      const orderId = customData.order_id || customData.orderId || data.passthrough;
+      const userId = customData.userId || customData.user_id || null;
 
       let savedOrder;
 
       if (orderId) {
-        savedOrder = await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            userId: userId || undefined,
-            status: 'completed',
-            amount: amount,
-            addressLine: address.line1 || address.street || undefined,
-            city: address.city || undefined,
-            countryCode: address.country_code || address.country || undefined,
-            postalCode: address.postal_code || address.postalCode || address.zip ? String(address.postal_code || address.postalCode || address.zip) : undefined,
-          },
+        const existingOrder = await prisma.order.findUnique({
+          where: { id: orderId }
         });
+
+        if (existingOrder) {
+          savedOrder = await prisma.order.update({
+            where: { id: orderId },
+            data: {
+              status: 'completed',
+              amount: amount ?? existingOrder.amount,
+              addressLine: address.line1 || address.street || undefined,
+              city: address.city || undefined,
+              countryCode: address.country_code || address.country || undefined,
+              postalCode: address.postal_code || address.postalCode || address.zip ? String(address.postal_code || address.postalCode || address.zip) : undefined,
+            },
+          });
+        } else {
+          // Fallback: if ID in custom_data didn't match an existing row, find the most recent pending order or create one
+          const latestPending = await prisma.order.findFirst({
+            where: { status: 'pending' },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          if (latestPending) {
+            savedOrder = await prisma.order.update({
+              where: { id: latestPending.id },
+              data: { status: 'completed', amount: amount ?? latestPending.amount }
+            });
+          } else {
+            savedOrder = await prisma.order.create({
+              data: {
+                id: orderId,
+                userId: userId,
+                email: customerEmail,
+                fullName: customerName,
+                amount: amount || 0,
+                status: 'completed',
+                addressLine: address.line1 || 'N/A',
+                city: address.city || 'N/A',
+                countryCode: address.country_code || 'US',
+                postalCode: 'N/A',
+              },
+            });
+          }
+        }
       } else {
-        savedOrder = await prisma.order.create({
-          data: {
-            userId: userId,
-            email: customerEmail,
-            fullName: customerName,
-            amount: amount || 0,
-            status: 'completed',
-            addressLine: address.line1 || address.street || 'N/A',
-            city: address.city || 'N/A',
-            countryCode: address.country_code || address.country || 'US',
-            postalCode: String(address.postal_code || address.postalCode || address.zip || 'N/A'),
-          },
+        // Ultimate fallback if no custom data order_id is found at all: update the latest pending order
+        const latestPending = await prisma.order.findFirst({
+          where: { status: 'pending' },
+          orderBy: { createdAt: 'desc' }
         });
+
+        if (latestPending) {
+          savedOrder = await prisma.order.update({
+            where: { id: latestPending.id },
+            data: { status: 'completed', amount: amount ?? latestPending.amount }
+          });
+        } else {
+          savedOrder = await prisma.order.create({
+            data: {
+              userId: userId,
+              email: customerEmail,
+              fullName: customerName,
+              amount: amount || 0,
+              status: 'completed',
+              addressLine: address.line1 || 'N/A',
+              city: address.city || 'N/A',
+              countryCode: address.country_code || 'US',
+              postalCode: 'N/A',
+            },
+          });
+        }
       }
 
       try {
@@ -83,7 +132,6 @@ export async function POST(request: Request) {
             <div style="font-family: sans-serif; padding: 20px; color: #18181b;">
               <h2>Thank you for your order, ${customerName}!</h2>
               <p>We have successfully received your payment. Your order ID is <strong>${savedOrder.id}</strong>.</p>
-              <p>We are getting your items ready for fulfillment.</p>
             </div>
           `,
         });
