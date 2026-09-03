@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { PrismaClient } from '@prisma/client';
 import { Resend } from 'resend';
-import { Paddle } from '@paddle/paddle-node';
+import { Paddle } from '@paddle/paddle-node-sdk';
 
 const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
