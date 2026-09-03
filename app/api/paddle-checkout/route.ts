@@ -1,14 +1,14 @@
-
-// Paste your single Paddle Product ID here
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { Resend } from 'resend';
 
 const prisma = new PrismaClient();
-const PADDLE_PRODUCT_ID = 'pro_01m1fzwehd7dket943knxkde5a'; // <-- Replace with your real pro_ ID
+const resend = new Resend(process.env.RESEND_API_KEY);
+const PADDLE_PRODUCT_ID = 'pro_01m1fzwehd7dket943knxkde5a';
 
 export async function POST(req: Request) {
   try {
-    const { items, shippingAddress } = await req.json();
+    const { items, shippingAddress, userId } = await req.json();
     const apiKey = process.env.PADDLE_API_KEY?.trim();
 
     if (!apiKey) {
@@ -19,12 +19,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No items in cart' }, { status: 400 });
     }
 
-    // Calculate total amount dynamically from the incoming items array
-    const totalAmount = items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    const totalAmount = Math.round(
+      items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0)
+    );
 
-    // 1. Save pending order to Neon database via Prisma
+    // 1. Save pending order to database with the userId and clean integer amount
     const dbOrder = await prisma.order.create({
       data: {
+        userId: userId || null,
         email: shippingAddress.email,
         fullName: shippingAddress.fullName,
         addressLine: shippingAddress.addressLine,
@@ -36,7 +38,27 @@ export async function POST(req: Request) {
       },
     });
 
-    // 2. Dynamically map each item's price and name into Paddle's line items payload
+    // 2. Send order confirmation email via Resend hardcoded to your sandbox address safely
+    try {
+      await resend.emails.send({
+        from: 'VELVET <onboarding@resend.dev>',
+        to: ['osamatarik06@gmail.com'],
+        subject: `Order Confirmation #${dbOrder.id.slice(-6)}`,
+        html: `
+          <div style="font-family: sans-serif; background: #000; color: #fff; padding: 20px; border-radius: 8px;">
+            <h2 style="color: #fff;">Thank you for your order, ${shippingAddress.fullName}!</h2>
+            <p>We've received your order and it is currently being processed.</p>
+            <p><strong>Order ID:</strong> ${dbOrder.id}</p>
+            <p><strong>Total Amount:</strong> $${(totalAmount / 100).toFixed(2)}</p>
+            <p style="color: #888; font-size: 12px; margin-top: 20px;">We will notify you once your items ship.</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+    }
+
+    // 3. Map line items for Paddle
     const lineItems = items.map((item: any) => ({
       quantity: item.quantity,
       price: {
@@ -45,12 +67,12 @@ export async function POST(req: Request) {
         tax_mode: 'external',
         unit_price: {
           currency_code: 'USD',
-          amount: Math.round(item.price).toString(), // Pulls the exact dynamic price passed from the frontend
+          amount: Math.round(item.price).toString(),
         },
       },
     }));
 
-    // 3. Create Paddle transaction using the dynamic line items
+    // 4. Create Paddle transaction and pass both order_id and userId in custom_data
     const response = await fetch('https://sandbox-api.paddle.com/transactions', {
       method: 'POST',
       headers: {
@@ -69,6 +91,7 @@ export async function POST(req: Request) {
         },
         custom_data: {
           order_id: dbOrder.id,
+          userId: userId || '',
         },
       }),
     });

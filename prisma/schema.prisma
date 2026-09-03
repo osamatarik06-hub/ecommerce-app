@@ -7,6 +7,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  fullName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]  
+}
+
 model Product {
   id          String      @id @default(uuid())
   name        String
@@ -18,19 +28,22 @@ model Product {
 }
 
 model Order {
-  id            String      @id @default(uuid())
-  email         String
-  fullName      String
-  addressLine   String
-  city          String
-  postalCode    String
-  countryCode   String
-  amount        Int
-  status        String      @default("pending")
-  createdAt     DateTime    @default(now())
+  id           String      @id @default(uuid())
+  email        String
+  fullName     String
+  addressLine  String
+  city         String
+  postalCode   String
+  countryCode  String
+  amount       Int
+  status       String      @default("pending")
+  createdAt    DateTime    @default(now())
   
-  // Add this opposite relation field:
-  items         OrderItem[] 
+  // Optional link to a registered user account
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id])
+  
+  items        OrderItem[] 
 }
 
 model OrderItem {
