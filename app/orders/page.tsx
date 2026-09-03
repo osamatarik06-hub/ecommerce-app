@@ -23,9 +23,17 @@ export default async function OrdersPage() {
     );
   }
 
+  // Fetch orders and include relational items and product info
   const orders = await prisma.order.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+    },
   });
 
   return (
@@ -44,12 +52,11 @@ export default async function OrdersPage() {
         ) : (
           <div className="space-y-4">
             {orders.map((order: any) => {
-              // Safely compute the dollar amount from order.amount (stored in cents)
-              const rawAmount = order.amount ?? order.total ?? 0;
+              const rawAmount = order.amount ?? 0;
               const formattedPrice = !isNaN(Number(rawAmount)) ? (Number(rawAmount) / 100).toFixed(2) : '0.00';
 
               return (
-                <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+                <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
                   <div className="flex justify-between items-center border-b border-gray-800 pb-3">
                     <div>
                       <p className="text-xs text-gray-400">Order ID</p>
@@ -65,6 +72,26 @@ export default async function OrdersPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Render Ordered Items List */}
+                  <div className="space-y-2 border-b border-gray-800 pb-3">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Items Purchased</p>
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item: any) => (
+                        <div key={item.id} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-200">
+                            {item.product?.name || 'Product'} <span className="text-gray-500 text-xs">x{item.quantity}</span>
+                          </span>
+                          <span className="text-gray-400 font-mono">
+                            ${((item.product?.price || 0) * item.quantity / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">No item details recorded.</p>
+                    )}
+                  </div>
+
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-400">Date: {new Date(order.createdAt).toLocaleDateString()}</span>
                     <span className="text-lg font-bold">${formattedPrice}</span>

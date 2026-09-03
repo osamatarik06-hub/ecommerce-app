@@ -27,116 +27,80 @@ export async function POST(request: Request) {
     const eventType = eventData.eventType;
     const data: any = eventData.data;
 
-    // Debug log to inspect incoming custom_data in Vercel logs
-    console.log('Incoming Webhook Event:', eventType);
-    console.log('Incoming custom_data:', JSON.stringify(data.custom_data));
-
     if (eventType === 'transaction.completed') {
-      const customerEmail = data.customer?.email || data.billing_details?.email || 'delivered@resend.dev';
-      const customerName = data.customer?.name || data.customer_name || 'Valued Customer';
+      const customData = data.custom_data || {};
+      const orderId = customData.order_id;
+      const userId = customData.userId || null;
       
+      const customerEmail = data.customer?.email || customData.email || 'customer@example.com';
+      const customerName = data.customer?.name || 'Valued Customer';
       const rawAmount = data.details?.totals?.total || data.total || 0;
-      const parsedAmount = typeof rawAmount === 'string' ? parseInt(rawAmount, 10) : Number(rawAmount);
-      const amount = isNaN(parsedAmount) ? undefined : parsedAmount;
-      
-      const address = data.address || data.billing_address || {};
-      
-      // Look up order ID across all possible locations in Paddle v2 payload
-      const customData = data.custom_data || data.checkout?.custom_data || {};
-      const orderId = customData.order_id || customData.orderId || data.passthrough;
-      const userId = customData.userId || customData.user_id || null;
+      const amount = Number(rawAmount) || 0;
+      const lineItems = data.items || data.details?.line_items || [];
+
+      // Build safe order items creation array, filtering out undefined product IDs
+      const orderItemsData = [];
+      for (const item of lineItems) {
+        // Look for product id via multiple fallback fields
+        const prodId = item.product?.id || item.product_id || item.price_id;
+
+        if (prodId) {
+          const productExists = await prisma.product.findUnique({ where: { id: prodId } });
+          if (productExists) {
+            orderItemsData.push({
+              quantity: item.quantity || 1,
+              product: { connect: { id: prodId } }
+            });
+          }
+        }
+      }
 
       let savedOrder;
-
       if (orderId) {
-        const existingOrder = await prisma.order.findUnique({
-          where: { id: orderId }
-        });
-
+        const existingOrder = await prisma.order.findUnique({ where: { id: orderId } });
         if (existingOrder) {
           savedOrder = await prisma.order.update({
             where: { id: orderId },
             data: {
               status: 'completed',
-              amount: amount ?? existingOrder.amount,
-              addressLine: address.line1 || address.street || undefined,
-              city: address.city || undefined,
-              countryCode: address.country_code || address.country || undefined,
-              postalCode: address.postal_code || address.postalCode || address.zip ? String(address.postal_code || address.postalCode || address.zip) : undefined,
-            },
-          });
-        } else {
-          // Fallback: if ID in custom_data didn't match an existing row, find the most recent pending order or create one
-          const latestPending = await prisma.order.findFirst({
-            where: { status: 'pending' },
-            orderBy: { createdAt: 'desc' }
-          });
-
-          if (latestPending) {
-            savedOrder = await prisma.order.update({
-              where: { id: latestPending.id },
-              data: { status: 'completed', amount: amount ?? latestPending.amount }
-            });
-          } else {
-            savedOrder = await prisma.order.create({
-              data: {
-                id: orderId,
-                userId: userId,
-                email: customerEmail,
-                fullName: customerName,
-                amount: amount || 0,
-                status: 'completed',
-                addressLine: address.line1 || 'N/A',
-                city: address.city || 'N/A',
-                countryCode: address.country_code || 'US',
-                postalCode: 'N/A',
-              },
-            });
-          }
-        }
-      } else {
-        // Ultimate fallback if no custom data order_id is found at all: update the latest pending order
-        const latestPending = await prisma.order.findFirst({
-          where: { status: 'pending' },
-          orderBy: { createdAt: 'desc' }
-        });
-
-        if (latestPending) {
-          savedOrder = await prisma.order.update({
-            where: { id: latestPending.id },
-            data: { status: 'completed', amount: amount ?? latestPending.amount }
+              amount: amount,
+              email: customerEmail,
+              fullName: customerName,
+              items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
+            }
           });
         } else {
           savedOrder = await prisma.order.create({
             data: {
+              id: orderId,
               userId: userId,
               email: customerEmail,
               fullName: customerName,
-              amount: amount || 0,
+              amount: amount,
               status: 'completed',
-              addressLine: address.line1 || 'N/A',
-              city: address.city || 'N/A',
-              countryCode: address.country_code || 'US',
+              addressLine: 'N/A',
+              city: 'N/A',
               postalCode: 'N/A',
-            },
+              countryCode: 'US',
+              items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
+            }
           });
         }
-      }
-
-      try {
-        await resend.emails.send({
-          from: 'VELVET Support <onboarding@resend.dev>',
-          to: ['osamatarik06@gmail.com'],
-          subject: 'Order Confirmed - Thank You!',
-          html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #18181b;">
-              <h2>Thank you for your order, ${customerName}!</h2>
-              <p>We have successfully received your payment. Your order ID is <strong>${savedOrder.id}</strong>.</p>
-            </div>
-          `,
+      } else {
+        savedOrder = await prisma.order.create({
+          data: {
+            userId: userId,
+            email: customerEmail,
+            fullName: customerName,
+            amount: amount,
+            status: 'completed',
+            addressLine: 'N/A',
+            city: 'N/A',
+            postalCode: 'N/A',
+            countryCode: 'US',
+            items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
+          }
         });
-      } catch (emailError: any) {
-        console.error('Non-blocking Resend Error:', emailError?.message || emailError);
       }
 
       return NextResponse.json({ success: true, received: true });
@@ -144,7 +108,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error('Webhook Error:', error.message);
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
+    console.error('Webhook Error Details:', error?.message || error);
+    return NextResponse.json({ error: 'Webhook handler failed', details: error?.message }, { status: 500 });
   }
 }
