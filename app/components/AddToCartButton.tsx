@@ -1,5 +1,7 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
+
 interface AddToCartButtonProps {
   id: string;
   name: string;
@@ -7,20 +9,29 @@ interface AddToCartButtonProps {
 }
 
 export default function AddToCartButton({ id, name, price }: AddToCartButtonProps) {
+  const { data: session } = useSession();
+
   const handleAddToCart = () => {
-    const existingCart = JSON.parse(localStorage.getItem('cart_items') || '[]');
-    const existingIndex = existingCart.findIndex((item: any) => item.id === id);
+    const userId = session?.user ? (session.user as any).id : null;
 
-    if (existingIndex > -1) {
-      existingCart[existingIndex].quantity += 1;
+    // 1. Instant UI update across components with product payload
+    window.dispatchEvent(new CustomEvent('cartUpdated', { detail: { id, name, price } }));
+
+    if (!userId) {
+      // Guest path: LocalStorage
+      const saved = JSON.parse(localStorage.getItem('cart_items') || '[]');
+      const index = saved.findIndex((item: any) => item.id === id);
+      if (index > -1) saved[index].quantity += 1;
+      else saved.push({ id, name, price, quantity: 1 });
+      localStorage.setItem('cart_items', JSON.stringify(saved));
     } else {
-      existingCart.push({ id, name, price, quantity: 1 });
+      // User path: Background fire-and-forget POST
+      fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, productId: id, increment: true }),
+      }).catch((err) => console.error('Background sync failed', err));
     }
-
-    localStorage.setItem('cart_items', JSON.stringify(existingCart));
-
-    // Dispatch a custom event so the Navbar instantly updates the count badge
-    window.dispatchEvent(new Event('cartUpdated'));
   };
 
   return (

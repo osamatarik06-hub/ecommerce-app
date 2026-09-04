@@ -1,7 +1,7 @@
-'use client'; // or 'use client'
+'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const { update } = useSession();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,13 +20,14 @@ export default function LoginPage() {
       redirect: false,
       email,
       password,
+      callbackUrl: '/',
     });
 
     if (result?.error) {
-      setError(result.error);
+      setError('Invalid email or password');
     } else {
-      router.push('/');
-      router.refresh();
+      await update();
+      window.location.href = result?.url || '/';
     }
   };
 
@@ -39,20 +41,22 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700">Email Address</label>
             <input
               type="email"
+              name="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black text-black"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
               type="password"
+              name="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black text-black"
             />
           </div>
           <button

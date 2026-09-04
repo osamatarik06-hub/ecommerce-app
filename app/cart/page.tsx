@@ -23,7 +23,7 @@ export default function CartPage() {
 
   const getUserId = () => {
     if (session?.user) {
-      return (session.user as any).id || (session.user as any).userId;
+      return (session.user as any).id || (session.user as any).sub;
     }
     return null;
   };
@@ -35,8 +35,7 @@ export default function CartPage() {
       try {
         const res = await fetch(`/api/cart?userId=${userId}`);
         const data = await res.json();
-        if (data.success) {
-          // Format database CartItem relations to match local render expectations (item.id = product.id)
+        if (data.success && data.items) {
           const formatted = data.items.map((ci: any) => ({
             id: ci.product.id,
             name: ci.product.name,
@@ -52,15 +51,9 @@ export default function CartPage() {
       }
     }
 
-    // Fallback to localStorage if unauthenticated or fetch fails
-    const savedCart = localStorage.getItem('cart_items');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error('Failed to parse local cart');
-      }
-    }
+    // Fallback to localStorage for guest users
+    const savedCart = JSON.parse(localStorage.getItem('cart_items') || '[]');
+    setCartItems(savedCart);
   };
 
   useEffect(() => {
@@ -77,8 +70,9 @@ export default function CartPage() {
     if (status !== 'loading') {
       loadCart();
     }
-    window.addEventListener('cartUpdated', loadCart);
-    return () => window.removeEventListener('cartUpdated', loadCart);
+    const handleCartUpdate = () => loadCart();
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, [status, session]);
 
   // Pre-fill user details safely using optional chaining
