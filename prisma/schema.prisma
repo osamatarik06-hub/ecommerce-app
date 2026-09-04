@@ -8,12 +8,12 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   password  String
   fullName  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   orders    Order[]  
   cartItems CartItem[]
 }
@@ -25,7 +25,7 @@ model Product {
   price       Int
   imageUrl    String
   createdAt   DateTime    @default(now())
-  OrderItem   OrderItem[]
+  orderItems  OrderItem[]
   cartItems   CartItem[]
 }
 
@@ -43,21 +43,25 @@ model CartItem {
 }
 
 model Order {
-  id           String      @id @default(uuid())
-  email        String
-  fullName     String
-  addressLine  String
-  city         String
-  postalCode   String
-  countryCode  String
-  amount       Int
-  status       String      @default("pending")
-  createdAt    DateTime    @default(now())
+  id                String       @id @default(uuid())
+  email             String
+  fullName          String
+  addressLine       String
+  city              String
+  postalCode        String
+  countryCode       String
+  amount            Int
+  shippingFee       Int          @default(0) // <--- Add this (stored in cents)
+  status            String       @default("pending")
+  trackingNumber    String?
+  estimatedDelivery DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now()) @updatedAt
   
-  userId       String?
-  user         User?       @relation(fields: [userId], references: [id])
+  userId            String?
+  user              User?        @relation(fields: [userId], references: [id])
   
-  items        OrderItem[] 
+  items             OrderItem[]  
 }
 
 model OrderItem {
@@ -65,6 +69,6 @@ model OrderItem {
   orderId   String
   productId String
   quantity  Int
-  order     Order   @relation(fields: [orderId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
 }

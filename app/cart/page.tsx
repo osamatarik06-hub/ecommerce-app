@@ -12,6 +12,8 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
   const [cartItems, setCartItems] = useState<any[]>([]);
 
+  const SHIPPING_FEE = 500; // $5.00 flat rate in cents
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -137,7 +139,8 @@ export default function CartPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalAmount = subtotalAmount + (cartItems.length > 0 ? SHIPPING_FEE : 0);
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +157,7 @@ export default function CartPage() {
           items: cartItems,
           shippingAddress: formData,
           userId: getUserId(),
+          shippingFee: SHIPPING_FEE,
         }),
       });
 
@@ -250,9 +254,23 @@ export default function CartPage() {
                   <input type="text" name="countryCode" required maxLength={2} placeholder="Country (e.g. US)" value={formData.countryCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white uppercase" />
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-gray-800">
-                  <span className="text-2xl font-bold">Subtotal: ${(totalAmount / 100).toFixed(2)}</span>
-                  <button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg">
+                <div className="border-t border-gray-800 pt-4 space-y-2">
+                  <div className="flex justify-between text-sm text-gray-400">
+                    <span>Subtotal:</span>
+                    <span className="font-mono">${(subtotalAmount / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-400">
+                    <span>Shipping (Flat Rate):</span>
+                    <span className="font-mono">${(SHIPPING_FEE / 100).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-800">
+                    <span className="text-xl font-bold">Total:</span>
+                    <span className="text-2xl font-bold font-mono">${(totalAmount / 100).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">
                     {loading ? 'Processing...' : 'Proceed to Payment'}
                   </button>
                 </div>
