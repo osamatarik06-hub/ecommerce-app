@@ -261,15 +261,22 @@ export default async function AdminDashboard({
             <p style={{ color: '#a1a1aa', fontSize: '14px', margin: '5px 0 0' }}>Manage live customer orders, fulfillment, tracking, and store inventory.</p>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ background: '#27272a', padding: '8px 16px', borderRadius: '6px', fontSize: '14px' }}>
-              Total Real Orders: <strong>{totalLiveOrders}</strong>
-            </div>
-            <form action={handleLogout}>
-              <button type="submit" style={{ background: '#27272a', color: '#ef4444', border: '1px solid #3f3f46', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                Sign Out
-              </button>
-            </form>
-          </div>
+  			<a 
+    			href="/admin/returns" 
+    				style={{ background: '#27272a', color: '#fff', border: '1px solid #3f3f46', padding: '8px 14px', borderRadius: '6px', fontSize: '14px', fontWeight: '500', textDecoration: 'none' }}
+  				>
+    			Manage Returns
+  			</a>
+
+  			<div style={{ background: '#27272a', padding: '8px 16px', borderRadius: '6px', fontSize: '14px' }}>
+    				Total Real Orders: <strong>{totalLiveOrders}</strong>
+  			</div>
+  			<form action={handleLogout}>
+    			<button type="submit" style={{ background: '#27272a', color: '#ef4444', border: '1px solid #3f3f46', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
+      				Sign Out
+    			</button>
+  			</form>
+		</div>
         </div>
 
         {/* Real Orders Table Container */}

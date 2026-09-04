@@ -43,7 +43,7 @@ model CartItem {
 }
 
 model Order {
-  id                String       @id @default(uuid())
+  id                String          @id @default(uuid())
   email             String
   fullName          String
   addressLine       String
@@ -51,17 +51,18 @@ model Order {
   postalCode        String
   countryCode       String
   amount            Int
-  shippingFee       Int          @default(0) // <--- Add this (stored in cents)
-  status            String       @default("pending")
+  shippingFee       Int             @default(0)
+  status            String          @default("pending")
   trackingNumber    String?
   estimatedDelivery DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @default(now()) @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @default(now()) @updatedAt
   
   userId            String?
-  user              User?        @relation(fields: [userId], references: [id])
+  user              User?           @relation(fields: [userId], references: [id])
   
   items             OrderItem[]  
+  returns           ReturnRequest[]
 }
 
 model OrderItem {
@@ -71,4 +72,15 @@ model OrderItem {
   quantity  Int
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
+}
+
+model ReturnRequest {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId      String
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, REFUNDED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

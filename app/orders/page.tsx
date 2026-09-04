@@ -33,6 +33,7 @@ export default async function OrdersPage() {
           product: true,
         },
       },
+      returns: true, // <--- Added to track return request statuses per order
     },
   });
 
