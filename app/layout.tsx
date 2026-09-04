@@ -6,8 +6,24 @@ import { Providers } from "./components/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VELVET",
-  description: "Secure E-Commerce Storefront",
+  title: {
+    default: "VELVET | Secure E-Commerce Storefront",
+    template: "%s | VELVET",
+  },
+  description: "Shop exclusive high-end tech, accessories, and lifestyle gear securely at VELVET.",
+  metadataBase: new URL("https://ecommerce-app-eight-lovat.vercel.app"),
+  openGraph: {
+    title: "VELVET | Secure E-Commerce Storefront",
+    description: "Shop exclusive high-end tech, accessories, and lifestyle gear securely at VELVET.",
+    url: "https://ecommerce-app-eight-lovat.vercel.app",
+    siteName: "VELVET",
+    locale: "en_US",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
