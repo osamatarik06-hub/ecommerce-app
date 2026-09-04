@@ -123,10 +123,11 @@ export default function Navbar() {
                     My Orders
                   </Link>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       localStorage.removeItem('cart_items');
                       setCartItems([]);
-                      signOut({ callbackUrl: 'https://ecommerce-app-eight-lovat.vercel.app' });
+                      await signOut({ redirect: false });
+                      window.location.href = '/';
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 rounded-lg"
                   >
