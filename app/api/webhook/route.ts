@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { Paddle } from '@paddle/paddle-node-sdk';
 
-const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const paddle = new Paddle(process.env.PADDLE_API_KEY || '');
 
@@ -107,7 +106,7 @@ export async function POST(request: Request) {
         });
         console.log(`Webhook successfully updated order ${orderId} to completed.`);
       } else {
-        await prisma.order.create({
+        const newOrder = await prisma.order.create({
           data: {
             userId: userId,
             email: customerEmail,
@@ -121,7 +120,32 @@ export async function POST(request: Request) {
             items: orderItemsData.length > 0 ? { create: orderItemsData } : undefined
           }
         });
+        orderId = newOrder.id;
         console.log('Webhook created new completed order via fallback.');
+      }
+
+      // Send Order Confirmation Email using Resend
+      if (customerEmail && customerEmail !== 'customer@example.com') {
+        try {
+          await resend.emails.send({
+            from: 'VELVET <onboarding@resend.dev>', // Change to your verified domain later
+            to: [customerEmail],
+            subject: `Order Confirmation #${orderId ? orderId.slice(0, 8) : 'VELVET'}`,
+            html: `
+              <div style="font-family: sans-serif; background: #FAF3E0; color: #3B2F2F; padding: 30px;">
+                <h1 style="color: #C07C56;">Thank you for your order, ${customerName}!</h1>
+                <p>Your payment has been successfully processed through Paddle.</p>
+                <p><strong>Order ID:</strong> ${orderId}</p>
+                <p><strong>Total Amount:</strong> $${(amount / 100).toFixed(2)}</p>
+                <p>We are getting your items ready for shipment.</p>
+                <br/>
+                <p style="font-size: 12px; color: #6F4E57;">VELVET Storefront</p>
+              </div>
+            `,
+          });
+        } catch (emailErr) {
+          console.error('Failed to send confirmation email:', emailErr);
+        }
       }
 
       return NextResponse.json({ success: true, received: true });

@@ -28,7 +28,6 @@ export default function LoginPage() {
         setError('Invalid email or password');
         setLoading(false);
       } else {
-        // Clear any leftover guest local storage cart so it doesn't bleed into the account
         localStorage.removeItem('cart_items');
         router.push('/');
         router.refresh();
@@ -40,40 +39,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col justify-center items-center p-4">
-      <div className="max-w-md w-full bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-xl space-y-6">
+    <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col justify-center items-center p-4 font-sans">
+      <div className="max-w-md w-full bg-white/80 border border-[#6F4E57]/20 rounded-2xl p-8 shadow-sm space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Sign In to VELVET</h1>
-          <p className="text-sm text-gray-400 mt-1">Enter your credentials to access your account and saved cart.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-[#3B2F2F]">Sign In to VELVET</h1>
+          <p className="text-sm text-[#6F4E57] mt-1">Enter your credentials to access your account and saved cart.</p>
         </div>
 
         {error && (
-          <div className="bg-red-950/50 border border-red-800 text-red-300 text-sm p-3 rounded-lg">
+          <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-xl text-center">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Email Address</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#6F4E57] mb-2">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gray-600"
+              className="w-full bg-white border border-[#6F4E57]/30 rounded-xl px-4 py-2.5 text-sm text-[#3B2F2F] placeholder-[#6F4E57]/60 focus:outline-none focus:border-[#6F4E57]"
               placeholder="name@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Password</label>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[#6F4E57] mb-2">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-black border border-gray-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-gray-600"
+              className="w-full bg-white border border-[#6F4E57]/30 rounded-xl px-4 py-2.5 text-sm text-[#3B2F2F] placeholder-[#6F4E57]/60 focus:outline-none focus:border-[#6F4E57]"
               placeholder="••••••••"
             />
           </div>
@@ -81,15 +80,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-black hover:bg-gray-200 font-semibold py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
+            className="w-full bg-[#C07C56] hover:bg-[#b06c48] text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md disabled:opacity-50 uppercase tracking-wider"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-[#6F4E57]">
           Don't have an account?{' '}
-          <Link href="/signup" className="text-white font-medium hover:underline">
+          <Link href="/signup" className="text-[#C07C56] font-semibold hover:underline">
             Register
           </Link>
         </p>

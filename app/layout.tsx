@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "./components/Providers";
 import CookieBanner from "./components/CookieBanner";
 import Footer from "./components/Footer";
+import AIChatWidget from "./components/AIChatWidget";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -57,6 +58,8 @@ export default function RootLayout({
           <Footer />
           <CookieBanner />
         </Providers>
+
+        <AIChatWidget />
       </body>
     </html>
   );

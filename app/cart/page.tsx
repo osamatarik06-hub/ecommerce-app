@@ -183,34 +183,34 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col font-sans">
       <Navbar />
-      <main className="max-w-3xl mx-auto p-8 space-y-6">
-        <h1 className="text-3xl font-bold">Your Shopping Cart</h1>
+      <main className="max-w-3xl mx-auto p-8 space-y-6 flex-grow w-full">
+        <h1 className="text-3xl font-bold text-[#3B2F2F]">Your Shopping Cart</h1>
 
         <div className="space-y-4">
           {cartItems.length === 0 ? (
-            <p className="text-gray-400">Your cart is empty.</p>
+            <p className="text-[#6F4E57]">Your cart is empty.</p>
           ) : (
             cartItems.map((item) => (
-              <div key={item.id} className="border-b border-gray-800 pb-4 flex justify-between items-center">
+              <div key={item.id} className="border-b border-[#6F4E57]/20 pb-4 flex justify-between items-center">
                 <div className="flex items-center space-x-4">
                   {item.imageUrl && (
-                    <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-lg" />
+                    <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-xl border border-[#6F4E57]/20" />
                   )}
                   <div>
-                    <h2 className="text-xl font-semibold">{item.name}</h2>
-                    <p className="text-gray-400">${(item.price / 100).toFixed(2)} each</p>
+                    <h2 className="text-lg font-bold text-[#3B2F2F]">{item.name}</h2>
+                    <p className="text-[#6F4E57] text-xs">${(item.price / 100).toFixed(2)} each</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-2">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-sm">-</button>
-                    <span className="w-4 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-sm">+</button>
+                    <button onClick={() => updateQuantity(item.id, -1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">-</button>
+                    <span className="w-6 text-center font-medium">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.id, 1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">+</button>
                   </div>
-                  <span className="text-xl font-bold w-24 text-right">${((item.price * item.quantity) / 100).toFixed(2)}</span>
-                  <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-300 text-sm font-medium">Remove</button>
+                  <span className="text-lg font-extrabold w-24 text-right text-[#C07C56]">${((item.price * item.quantity) / 100).toFixed(2)}</span>
+                  <button onClick={() => removeItem(item.id)} className="text-red-600 hover:text-red-700 text-xs font-semibold uppercase tracking-wider">Remove</button>
                 </div>
               </div>
             ))
@@ -220,57 +220,57 @@ export default function CartPage() {
         {cartItems.length > 0 && (
           <div>
             {status === 'loading' ? (
-              <p className="text-gray-400">Checking authentication status...</p>
+              <p className="text-[#6F4E57]">Checking authentication status...</p>
             ) : !session ? (
-              <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 text-center space-y-4">
-                <h2 className="text-xl font-semibold">Sign in to complete your purchase</h2>
-                <p className="text-gray-400 text-sm">You can browse items freely, but you need an account to proceed to checkout.</p>
+              <div className="bg-white/80 p-6 rounded-2xl border border-[#6F4E57]/20 shadow-sm text-center space-y-4">
+                <h2 className="text-xl font-bold text-[#3B2F2F]">Sign in to complete your purchase</h2>
+                <p className="text-[#6F4E57] text-xs leading-relaxed">You can browse items freely, but you need an account to proceed to checkout.</p>
                 <div className="flex justify-center space-x-4 pt-2">
-                  <Link href="/login" className="bg-white text-black font-medium py-2 px-6 rounded-lg hover:bg-gray-200">
+                  <Link href="/login" className="bg-[#3B2F2F] text-[#FAF3E0] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:bg-[#2c2323] transition-all shadow-md">
                     Sign In
                   </Link>
-                  <Link href="/signup" className="border border-gray-700 font-medium py-2 px-6 rounded-lg hover:bg-gray-800">
+                  <Link href="/signup" className="border border-[#6F4E57]/30 text-[#3B2F2F] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:border-[#6F4E57] transition-all">
                     Create Account
                   </Link>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleCheckout} className="space-y-4 bg-gray-900 p-6 rounded-xl border border-gray-800">
+              <form onSubmit={handleCheckout} className="space-y-4 bg-white/80 p-6 rounded-2xl border border-[#6F4E57]/20 shadow-sm">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">Shipping Information</h2>
-                  <span className="text-xs text-green-400 bg-green-950 px-2.5 py-1 rounded-full border border-green-800">Logged in as {session.user?.email}</span>
+                  <h2 className="text-xl font-bold text-[#3B2F2F]">Shipping Information</h2>
+                  <span className="text-xs text-[#6F4E57] bg-[#6F4E57]/10 px-3 py-1 rounded-full border border-[#6F4E57]/30 font-medium">Logged in as {session.user?.email}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="text" name="fullName" required placeholder="Full Name" value={formData.fullName} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
-                  <input type="email" name="email" required placeholder="Email Address" value={formData.email} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
+                  <input type="text" name="fullName" required placeholder="Full Name" value={formData.fullName} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
+                  <input type="email" name="email" required placeholder="Email Address" value={formData.email} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
                 </div>
 
-                <input type="text" name="addressLine" required placeholder="Street Address" value={formData.addressLine} onChange={handleChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white" />
+                <input type="text" name="addressLine" required placeholder="Street Address" value={formData.addressLine} onChange={handleChange} className="w-full bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
 
                 <div className="grid grid-cols-3 gap-4">
-                  <input type="text" name="city" required placeholder="City" value={formData.city} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
-                  <input type="text" name="postalCode" required placeholder="Postal Code" value={formData.postalCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white" />
-                  <input type="text" name="countryCode" required maxLength={2} placeholder="Country (e.g. US)" value={formData.countryCode} onChange={handleChange} className="bg-black border border-gray-700 rounded-lg p-3 text-white uppercase" />
+                  <input type="text" name="city" required placeholder="City" value={formData.city} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
+                  <input type="text" name="postalCode" required placeholder="Postal Code" value={formData.postalCode} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
+                  <input type="text" name="countryCode" required maxLength={2} placeholder="Country (e.g. US)" value={formData.countryCode} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm uppercase focus:outline-none focus:border-[#6F4E57]" />
                 </div>
 
-                <div className="border-t border-gray-800 pt-4 space-y-2">
-                  <div className="flex justify-between text-sm text-gray-400">
+                <div className="border-t border-[#6F4E57]/20 pt-4 space-y-2">
+                  <div className="flex justify-between text-sm text-[#6F4E57]">
                     <span>Subtotal:</span>
                     <span className="font-mono">${(subtotalAmount / 100).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-400">
+                  <div className="flex justify-between text-sm text-[#6F4E57]">
                     <span>Shipping (Flat Rate):</span>
                     <span className="font-mono">${(SHIPPING_FEE / 100).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-800">
-                    <span className="text-xl font-bold">Total:</span>
-                    <span className="text-2xl font-bold font-mono">${(totalAmount / 100).toFixed(2)}</span>
+                  <div className="flex justify-between items-center pt-2 border-t border-[#6F4E57]/20">
+                    <span className="text-xl font-bold text-[#3B2F2F]">Total:</span>
+                    <span className="text-2xl font-extrabold font-mono text-[#C07C56]">${(totalAmount / 100).toFixed(2)}</span>
                   </div>
                 </div>
 
                 <div className="pt-2">
-                  <button type="submit" disabled={loading} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                  <button type="submit" disabled={loading} className="w-full bg-[#C07C56] hover:bg-[#b06c48] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all text-sm uppercase tracking-wider">
                     {loading ? 'Processing...' : 'Proceed to Payment'}
                   </button>
                 </div>

@@ -11,14 +11,16 @@ export default async function OrdersPage() {
 
   if (!session?.user) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col font-sans">
         <Navbar />
-        <main className="max-w-3xl mx-auto p-8 text-center space-y-4">
-          <h1 className="text-3xl font-bold">Access Denied</h1>
-          <p className="text-gray-400">Please sign in to view your order history.</p>
-          <Link href="/login" className="inline-block bg-white text-black font-medium py-2 px-6 rounded-lg hover:bg-gray-200">
-            Sign In
-          </Link>
+        <main className="max-w-3xl mx-auto p-8 text-center space-y-4 flex-grow flex flex-col justify-center items-center">
+          <div className="bg-white/80 border border-[#6F4E57]/20 rounded-2xl p-8 shadow-sm w-full max-w-md space-y-4">
+            <h1 className="text-2xl font-bold text-[#3B2F2F]">Access Denied</h1>
+            <p className="text-[#6F4E57] text-xs">Please sign in to view your order history.</p>
+            <Link href="/login" className="inline-block bg-[#3B2F2F] text-[#FAF3E0] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:bg-[#2c2323] transition-all shadow-md w-full">
+              Sign In
+            </Link>
+          </div>
         </main>
       </div>
     );
@@ -38,15 +40,15 @@ export default async function OrdersPage() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col font-sans">
       <Navbar />
-      <main className="max-w-4xl mx-auto p-8 space-y-6">
-        <h1 className="text-3xl font-bold">Your Order History</h1>
+      <main className="max-w-4xl mx-auto p-8 space-y-6 flex-grow w-full">
+        <h1 className="text-3xl font-bold text-[#3B2F2F]">Your Order History</h1>
 
         {orders.length === 0 ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center space-y-4">
-            <p className="text-gray-400">You haven't placed any orders yet.</p>
-            <Link href="/" className="inline-block bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg">
+          <div className="bg-white/80 border border-[#6F4E57]/20 rounded-2xl p-8 text-center space-y-4 shadow-sm">
+            <p className="text-[#6F4E57] text-xs">You haven't placed any orders yet.</p>
+            <Link href="/" className="inline-block bg-[#C07C56] hover:bg-[#b06c48] text-white font-bold py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
               Start Shopping
             </Link>
           </div>
