@@ -104,6 +104,26 @@ model ReturnRequest {
   updatedAt   DateTime @updatedAt
 }
 
+model Coupon {
+  id              String           @id @default(cuid())
+  code            String           @unique
+  discountPercent Int              // e.g., 10 for 10%
+  isActive        Boolean          @default(true)
+  maxUses         Int?             // Optional global usage limit
+  timesUsed       Int              @default(0)
+  redeemedBy      RedeemedCoupon[]
+  createdAt       DateTime         @default(now())
+}
+
+model RedeemedCoupon {
+  id       String @id @default(cuid())
+  userId   String
+  couponId String
+  coupon   Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, couponId]) // Ensures a single user can only redeem it once
+}
+
 model Review {
   id         String   @id @default(uuid())
   rating     Int      

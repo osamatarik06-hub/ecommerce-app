@@ -9,10 +9,20 @@ export default function SuccessPage() {
     localStorage.removeItem('cart_items');
     window.dispatchEvent(new Event('cartUpdated'));
 
-    // Automatically trigger the completion helper and log the result
-    fetch('/api/orders/complete-latest', { method: 'POST' })
+    // Retrieve the coupon ID saved during checkout
+    const couponId = sessionStorage.getItem('applied_coupon_id');
+
+    // Automatically trigger the completion helper, send the coupon ID, and log the result
+    fetch('/api/orders/complete-latest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ couponId }),
+    })
       .then(res => res.json())
-      .then(data => console.log('Order update result:', data))
+      .then(data => {
+        console.log('Order update result:', data);
+        sessionStorage.removeItem('applied_coupon_id');
+      })
       .catch(err => console.error('Fetch error:', err));
   }, []);
 
