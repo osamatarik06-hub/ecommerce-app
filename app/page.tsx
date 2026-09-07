@@ -96,15 +96,19 @@ export default async function HomePage({
           <aside className="hidden lg:flex flex-col gap-6 sticky top-28">
             <div className="overflow-hidden rounded-2xl border border-[#D8C7B5] bg-[#FFFDF8] p-3 shadow-sm text-center">
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#C07C56]">Sponsored Ad</span>
-              {/* Replace block below with real Google Adsense <script> or <ins> tag */}
-              <div className="my-3 aspect-[3/6] relative rounded-xl bg-[#FAF3E0] overflow-hidden flex items-center justify-center border border-[#D8C7B5]/60">
+              
+              <div className="my-3 aspect-[3/6] relative rounded-xl bg-[#FAF3E0] overflow-hidden flex flex-col items-center justify-center border border-[#D8C7B5]/60 p-2">
                 <ins className="adsbygoogle"
-                     style={{ display: 'block' }}
-                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                     data-ad-slot="1234567890"
+                     style={{ display: 'block', width: '100%', height: '100%' }}
+                     data-ad-client="ca-pub-7024167381666296"
+                     data-ad-slot="YOUR_LEFT_AD_SLOT_ID"
                      data-ad-format="auto"
                      data-full-width-responsive="true"></ins>
-                <p className="text-xs font-medium text-[#6F4E57]/60 px-2 absolute">Google Ad (Left Rail)</p>
+                <script
+                  dangerouslySetInnerHTML={{
+                    __html: '(adsbygoogle = window.adsbygoogle || []).push({});',
+                  }}
+                />
               </div>
             </div>
           </aside>
@@ -495,15 +499,19 @@ export default async function HomePage({
           <aside className="hidden lg:flex flex-col gap-6 sticky top-28">
             <div className="overflow-hidden rounded-2xl border border-[#D8C7B5] bg-[#FFFDF8] p-3 shadow-sm text-center">
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#C07C56]">Sponsored Ad</span>
-              {/* Replace block below with real Google Adsense <script> or <ins> tag */}
-              <div className="my-3 aspect-[3/6] relative rounded-xl bg-[#FAF3E0] overflow-hidden flex items-center justify-center border border-[#D8C7B5]/60">
+              
+              <div className="my-3 aspect-[3/6] relative rounded-xl bg-[#FAF3E0] overflow-hidden flex flex-col items-center justify-center border border-[#D8C7B5]/60 p-2">
                 <ins className="adsbygoogle"
-                     style={{ display: 'block' }}
-                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-                     data-ad-slot="0987654321"
+                     style={{ display: 'block', width: '100%', height: '100%' }}
+                     data-ad-client="ca-pub-7024167381666296"
+                     data-ad-slot="YOUR_RIGHT_AD_SLOT_ID"
                      data-ad-format="auto"
                      data-full-width-responsive="true"></ins>
-                <p className="text-xs font-medium text-[#6F4E57]/60 px-2 absolute">Google Ad (Right Rail)</p>
+                <script
+                  dangerouslySetInnerHTML={{
+                    __html: '(adsbygoogle = window.adsbygoogle || []).push({});',
+                  }}
+                />
               </div>
             </div>
           </aside>
