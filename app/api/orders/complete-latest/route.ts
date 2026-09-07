@@ -12,45 +12,45 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { couponId } = body;
+    const { orderId, couponId } = body;
 
-    // Find the most recent pending order specifically for THIS user
-    const latestPending = await prisma.order.findFirst({
-      where: { 
-        userId: session.user.id,
-        status: { in: ['pending', 'PENDING', 'Pending'] } 
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (!latestPending) {
-      return NextResponse.json({ success: false, message: 'No pending orders found for this user' });
+    if (!orderId) {
+      return NextResponse.json({ success: false, message: 'Missing order reference' }, { status: 400 });
     }
 
-    // Mark order as completed and attach the userId explicitly
-    await prisma.order.update({
-      where: { id: latestPending.id },
-      data: { 
-        status: 'completed',
-        userId: session.user.id 
+    // Find the specific order by its secure ID
+    const order = await prisma.order.findUnique({
+      where: { id: orderId }
+    });
+
+    // Ensure the order exists and strictly belongs to the logged-in user
+    if (!order || order.userId !== session.user.id) {
+      return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+    }
+
+    // Only update if it's currently pending
+    if (order.status.toLowerCase() === 'pending') {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'completed' }
+      });
+
+      // Record coupon usage safely
+      if (couponId) {
+        await prisma.coupon.update({
+          where: { id: couponId },
+          data: { timesUsed: { increment: 1 } }
+        }).catch(() => {});
+
+        await prisma.redeemedCoupon.create({
+          data: { userId: session.user.id, couponId }
+        }).catch(() => {});
       }
-    });
-
-    // Record coupon usage safely
-    if (couponId) {
-      await prisma.coupon.update({
-        where: { id: couponId },
-        data: { timesUsed: { increment: 1 } }
-      }).catch(() => {});
-
-      await prisma.redeemedCoupon.create({
-        data: { userId: session.user.id, couponId }
-      }).catch(() => {});
     }
 
-    return NextResponse.json({ success: true, updatedId: latestPending.id });
+    return NextResponse.json({ success: true, updatedId: orderId });
   } catch (error: any) {
-    console.error('Complete latest error:', error);
+    console.error('Complete order error:', error);
     return NextResponse.json({ success: false, error: error?.message }, { status: 500 });
   }
 }

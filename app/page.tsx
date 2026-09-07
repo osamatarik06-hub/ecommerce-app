@@ -18,10 +18,10 @@ export default async function HomePage({
   // Stable category list defined safely in code to prevent database typos or clutter
   const categories = [
     { name: 'All', slug: 'all', icon: '✦' },
-    { name: 'Tech', slug: 'tech', icon: '⌁' },
-    { name: 'Home', slug: 'home', icon: '⌂' },
-    { name: 'Style', slug: 'style', icon: '◌' },
-    { name: 'Beauty', slug: 'beauty', icon: '✧' },
+    { name: 'Tech', slug: 'tech', icon: '' },
+    { name: 'Home', slug: 'home', icon: '' },
+    { name: 'Style', slug: 'style', icon: '' },
+    { name: 'Beauty', slug: 'beauty', icon: '' },
   ];
 
   // Fetch products based on category and search query

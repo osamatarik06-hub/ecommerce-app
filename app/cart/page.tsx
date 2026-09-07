@@ -128,17 +128,35 @@ export default function CartPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  // SECURE COUPON HANDLER: Checks the database backend instead of hardcoding
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
-    const code = inputCoupon.trim().toUpperCase();
-    if (code === 'SAVE10') {
-      setDiscountPercent(10);
-      setAppliedCode('SAVE10');
-      setCouponMessage('Coupon applied: 10% off!');
-    } else {
-      setDiscountPercent(0);
-      setAppliedCode('');
-      setCouponMessage('Invalid coupon code.');
+    const code = inputCoupon.trim();
+    if (!code) return;
+
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, userId: getUserId() }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setDiscountPercent(data.discountPercent);
+        setAppliedCode(code.toUpperCase());
+        setCouponMessage(data.message);
+        // Save the unique coupon ID so it can be marked as redeemed upon successful payment
+        sessionStorage.setItem('applied_coupon_id', data.couponId);
+      } else {
+        setDiscountPercent(0);
+        setAppliedCode('');
+        setCouponMessage(data.error || 'Invalid coupon code.');
+        sessionStorage.removeItem('applied_coupon_id');
+      }
+    } catch (err) {
+      console.error('Coupon error:', err);
+      setCouponMessage('Error applying coupon.');
     }
   };
 
@@ -233,7 +251,7 @@ export default function CartPage() {
                   <input type="email" name="email" required placeholder="Email Address" value={formData.email} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
                 </div>
 
-                {/* Coupon Code Input Slot - Placed above payment decision */}
+                {/* Coupon Code Input Slot */}
                 <div className="border-t border-[#6F4E57]/20 pt-4 space-y-2">
                   <label className="text-sm font-bold text-[#3B2F2F] block">Have a coupon code?</label>
                   <div className="flex space-x-2">
@@ -306,7 +324,7 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* PayPal Buttons with Dynamic Breakdown */}
+                {/* PayPal Buttons with Secure Order ID capture */}
                 <div className="pt-2">
                   <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID! }}>
                     <PayPalButtons 
@@ -368,7 +386,7 @@ export default function CartPage() {
                             countryCode: shippingInfo?.address?.country_code || 'US',
                           };
 
-                          await fetch('/api/orders', {
+                          const orderRes = await fetch('/api/orders', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -382,7 +400,14 @@ export default function CartPage() {
                               totalAmount,
                               shippingFee: SHIPPING_FEE,
                             }),
-                          }).catch(() => {});
+                          });
+
+                          const orderData = await orderRes.json();
+
+                          // SAVE THE SECURE ORDER ID FOR THE SUCCESS PAGE
+                          if (orderData.success && orderData.orderId) {
+                            sessionStorage.setItem('verified_order_id', orderData.orderId);
+                          }
 
                           await clearUserCart();
                           window.location.href = '/success';

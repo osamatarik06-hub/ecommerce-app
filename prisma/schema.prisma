@@ -8,16 +8,19 @@ generator client {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  fullName  String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  orders    Order[]  
-  cartItems CartItem[]
-  reviews   Review[]
+  id              String           @id @default(uuid())
+  email           String           @unique
+  password        String
+  fullName        String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  orders          Order[]          
+  cartItems       CartItem[]
+  reviews         Review[]
+  redeemedCoupons RedeemedCoupon[] // <--- ADD THIS LINE
 }
+
+// (Your other models remain the same, including your existing Coupon and RedeemedCoupon models)
 
 model Product {
   id          String      @id @default(uuid())
@@ -118,10 +121,11 @@ model Coupon {
 model RedeemedCoupon {
   id       String @id @default(cuid())
   userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade) // <--- ADD THIS LINE
   couponId String
   coupon   Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, couponId]) // Ensures a single user can only redeem it once
+  @@unique([userId, couponId])
 }
 
 model Review {
