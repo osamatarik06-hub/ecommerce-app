@@ -50,6 +50,10 @@ export default async function ProductDetailPage({
     ? product.reviews.some((r) => r.userId === currentUserId)
     : false;
 
+  // Discount validation & pricing metrics
+  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+  const effectivePrice = hasDiscount ? product.discountPrice : product.price;
+
   return (
     <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col justify-between font-sans">
       <Navbar />
@@ -91,9 +95,19 @@ export default async function ProductDetailPage({
               <h1 className="text-3xl font-bold mt-4 mb-2 text-[#3B2F2F]">
                 {product.name}
               </h1>
-              <p className="text-2xl font-bold text-[#C07C56] font-mono mb-4">
-                ${(product.price / 100).toFixed(2)}
-              </p>
+
+              {/* Price Display Block with High Contrast Strikethrough */}
+              <div className="flex items-center gap-3 mb-4">
+                <p className={`text-2xl font-bold font-mono ${hasDiscount ? 'text-red-500' : 'text-[#C07C56]'}`}>
+                  ${(effectivePrice / 100).toFixed(2)}
+                </p>
+                {hasDiscount && (
+                  <p className="text-sm text-[#6F4E57] line-through font-mono">
+                    ${(product.price / 100).toFixed(2)}
+                  </p>
+                )}
+              </div>
+
               <div className="border-t border-[#6F4E57]/20 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-[#6F4E57] uppercase mb-2 tracking-wider">
                   Description
@@ -108,7 +122,7 @@ export default async function ProductDetailPage({
               <AddToCartButton
                 id={product.id}
                 name={product.name}
-                price={product.price}
+                price={effectivePrice}
               />
             </div>
           </div>
@@ -170,8 +184,6 @@ export default async function ProductDetailPage({
           </div>
         </div>
       </main>
-
-   
     </div>
   );
 }
