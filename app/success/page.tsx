@@ -10,9 +10,10 @@ export default function SuccessPage() {
     localStorage.removeItem('cart_items');
     window.dispatchEvent(new Event('cartUpdated'));
 
-    // Retrieve the secure order ID and coupon ID saved during checkout
+    // Retrieve the secure order ID, coupon ID, and PayPal transaction ID saved during checkout
     const orderId = sessionStorage.getItem('verified_order_id');
     const couponId = sessionStorage.getItem('applied_coupon_id');
+    const paypalTransactionId = sessionStorage.getItem('paypal_tx_id'); // <--- 1. Grab PayPal Transaction ID
 
     // If someone visits /success manually without going through checkout, stop here!
     if (!orderId) {
@@ -20,11 +21,11 @@ export default function SuccessPage() {
       return;
     }
 
-    // Trigger completion strictly for this exact verified order ID
+    // Trigger completion strictly for this exact verified order ID and send the PayPal Transaction ID
     fetch('/api/orders/complete-latest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId, couponId }),
+      body: JSON.stringify({ orderId, couponId, paypalTransactionId }), // <--- 2. Sent in request body
     })
       .then(res => res.json())
       .then(data => {
@@ -32,6 +33,7 @@ export default function SuccessPage() {
         // Clean up session storage so it can't be reused
         sessionStorage.removeItem('verified_order_id');
         sessionStorage.removeItem('applied_coupon_id');
+        sessionStorage.removeItem('paypal_tx_id'); // <--- 3. Clean up PayPal TX storage as well
       })
       .catch(err => console.error('Fetch error:', err));
   }, []);

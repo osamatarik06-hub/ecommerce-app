@@ -324,7 +324,7 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* PayPal Buttons with Secure Order ID capture */}
+                {/* PayPal Buttons with Secure Order ID & Transaction ID capture */}
                 <div className="pt-2">
                   <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID! }}>
                     <PayPalButtons 
@@ -376,6 +376,9 @@ export default function CartPage() {
                         try {
                           const details = await actions.order?.capture();
                           
+                          // EXTRACT THE PAYPAL TRANSACTION ID
+                          const paypalTransactionId = details?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+
                           const shippingInfo = details?.purchase_units?.[0]?.shipping;
                           const paypalAddress = {
                             fullName: shippingInfo?.name?.full_name || formData.fullName,
@@ -404,9 +407,12 @@ export default function CartPage() {
 
                           const orderData = await orderRes.json();
 
-                          // SAVE THE SECURE ORDER ID FOR THE SUCCESS PAGE
+                          // SAVE THE SECURE ORDER ID AND PAYPAL TRANSACTION ID FOR THE SUCCESS PAGE
                           if (orderData.success && orderData.orderId) {
                             sessionStorage.setItem('verified_order_id', orderData.orderId);
+                            if (paypalTransactionId) {
+                              sessionStorage.setItem('paypal_tx_id', paypalTransactionId);
+                            }
                           }
 
                           await clearUserCart();

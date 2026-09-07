@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { orderId, couponId } = body;
+    const { orderId, couponId, paypalTransactionId } = body; // <--- 1. Destructure paypalTransactionId here
 
     if (!orderId) {
       return NextResponse.json({ success: false, message: 'Missing order reference' }, { status: 400 });
@@ -32,7 +32,10 @@ export async function POST(request: Request) {
     if (order.status.toLowerCase() === 'pending') {
       await prisma.order.update({
         where: { id: orderId },
-        data: { status: 'completed' }
+        data: { 
+          status: 'completed',
+          paypalTransactionId: paypalTransactionId || order.paypalTransactionId // <--- 2. Save the PayPal transaction ID here
+        }
       });
 
       // Record coupon usage safely
