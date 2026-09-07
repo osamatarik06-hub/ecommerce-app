@@ -340,6 +340,7 @@ export default function CartPage() {
                         const surname = nameParts.slice(1).join(' ') || givenName;
 
                         return actions.order.create({
+			 intent: "CAPTURE",
                           purchase_units: [{
                             amount: {
                               currency_code: "USD",
