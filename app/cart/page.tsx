@@ -43,6 +43,7 @@ export default function CartPage() {
             id: ci.product.id,
             name: ci.product.name,
             price: ci.product.price,
+            discountPrice: ci.product.discountPrice,
             quantity: ci.quantity,
             imageUrl: ci.product.imageUrl,
           }));
@@ -146,7 +147,6 @@ export default function CartPage() {
         setDiscountPercent(data.discountPercent);
         setAppliedCode(code.toUpperCase());
         setCouponMessage(data.message);
-        // Save the unique coupon ID so it can be marked as redeemed upon successful payment
         sessionStorage.setItem('applied_coupon_id', data.couponId);
       } else {
         setDiscountPercent(0);
@@ -160,7 +160,13 @@ export default function CartPage() {
     }
   };
 
-  const subtotalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Calculate subtotal using the effective price (discountPrice if valid, otherwise regular price)
+  const subtotalAmount = cartItems.reduce((sum, item) => {
+    const hasDiscount = item.discountPrice && item.discountPrice < item.price;
+    const effectivePrice = hasDiscount ? item.discountPrice : item.price;
+    return sum + (effectivePrice * item.quantity);
+  }, 0);
+
   const discountAmount = Math.round(subtotalAmount * (discountPercent / 100));
   const discountedSubtotal = subtotalAmount - discountAmount;
   const totalAmount = discountedSubtotal + (cartItems.length > 0 ? SHIPPING_FEE : 0);
@@ -196,28 +202,42 @@ export default function CartPage() {
           {cartItems.length === 0 ? (
             <p className="text-[#6F4E57]">Your cart is empty.</p>
           ) : (
-            cartItems.map((item) => (
-              <div key={item.id} className="border-b border-[#6F4E57]/20 pb-4 flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  {item.imageUrl && (
-                    <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-xl border border-[#6F4E57]/20" />
-                  )}
-                  <div>
-                    <h2 className="text-lg font-bold text-[#3B2F2F]">{item.name}</h2>
-                    <p className="text-[#6F4E57] text-xs">${(item.price / 100).toFixed(2)} each</p>
+            cartItems.map((item) => {
+              const hasDiscount = item.discountPrice && item.discountPrice < item.price;
+              const effectivePrice = hasDiscount ? item.discountPrice : item.price;
+
+              return (
+                <div key={item.id} className="border-b border-[#6F4E57]/20 pb-4 flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    {item.imageUrl && (
+                      <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-xl border border-[#6F4E57]/20" />
+                    )}
+                    <div>
+                      <h2 className="text-lg font-bold text-[#3B2F2F]">{item.name}</h2>
+                      <div className="flex items-center space-x-2">
+                        <p className={`text-xs font-bold ${hasDiscount ? 'text-red-600' : 'text-[#6F4E57]'}`}>
+                          ${(effectivePrice / 100).toFixed(2)} each
+                        </p>
+                        {hasDiscount && (
+                          <p className="text-[10px] text-[#6F4E57]/60 line-through">
+                            ${(item.price / 100).toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-2">
+                      <button type="button" onClick={() => updateQuantity(item.id, -1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">-</button>
+                      <span className="w-6 text-center font-medium">{item.quantity}</span>
+                      <button type="button" onClick={() => updateQuantity(item.id, 1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">+</button>
+                    </div>
+                    <span className="text-lg font-extrabold w-24 text-right text-[#C07C56]">${((effectivePrice * item.quantity) / 100).toFixed(2)}</span>
+                    <button type="button" onClick={() => removeItem(item.id)} className="text-red-600 hover:text-red-700 text-xs font-semibold uppercase tracking-wider">Remove</button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center space-x-2">
-                    <button type="button" onClick={() => updateQuantity(item.id, -1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">-</button>
-                    <span className="w-6 text-center font-medium">{item.quantity}</span>
-                    <button type="button" onClick={() => updateQuantity(item.id, 1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">+</button>
-                  </div>
-                  <span className="text-lg font-extrabold w-24 text-right text-[#C07C56]">${((item.price * item.quantity) / 100).toFixed(2)}</span>
-                  <button type="button" onClick={() => removeItem(item.id)} className="text-red-600 hover:text-red-700 text-xs font-semibold uppercase tracking-wider">Remove</button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -340,7 +360,7 @@ export default function CartPage() {
                         const surname = nameParts.slice(1).join(' ') || givenName;
 
                         return actions.order.create({
-			 intent: "CAPTURE",
+                          intent: "CAPTURE",
                           purchase_units: [{
                             amount: {
                               currency_code: "USD",
@@ -377,7 +397,6 @@ export default function CartPage() {
                         try {
                           const details = await actions.order?.capture();
                           
-                          // EXTRACT THE PAYPAL TRANSACTION ID
                           const paypalTransactionId = details?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
                           const shippingInfo = details?.purchase_units?.[0]?.shipping;
@@ -408,7 +427,6 @@ export default function CartPage() {
 
                           const orderData = await orderRes.json();
 
-                          // SAVE THE SECURE ORDER ID AND PAYPAL TRANSACTION ID FOR THE SUCCESS PAGE
                           if (orderData.success && orderData.orderId) {
                             sessionStorage.setItem('verified_order_id', orderData.orderId);
                             if (paypalTransactionId) {

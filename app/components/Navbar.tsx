@@ -9,12 +9,13 @@ export default function Navbar() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isUserOpen, setIsUserOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState('EN');
 
   const getUserId = () => session?.user ? (session.user as any).id : null;
 
   const loadCart = async () => {
     const userId = getUserId();
-    
     if (userId) {
       try {
         const res = await fetch(`/api/cart?userId=${userId}`);
@@ -24,6 +25,7 @@ export default function Navbar() {
             id: ci.product.id,
             name: ci.product.name,
             price: ci.product.price,
+            discountPrice: ci.product.discountPrice,
             quantity: ci.quantity,
             imageUrl: ci.product.imageUrl,
           }));
@@ -34,7 +36,6 @@ export default function Navbar() {
         console.error('Failed to load database cart', e);
       }
     }
-
     const savedCart = JSON.parse(localStorage.getItem('cart_items') || '[]');
     setCartItems(savedCart);
   };
@@ -102,10 +103,40 @@ export default function Navbar() {
 
   return (
     <nav className="w-full bg-[#3B2F2F] border-b border-[#6F4E57]/30 text-[#FAF3E0] sticky top-0 z-50 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="max-w-[1600px] mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="font-extrabold text-xl tracking-wider text-[#FAF3E0]">VELVET</Link>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
+          
+          {/* LANGUAGE SELECTOR DROPDOWN */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsLangOpen(true)}
+            onMouseLeave={() => setIsLangOpen(false)}
+          >
+            <button className="bg-[#6F4E57]/30 hover:bg-[#6F4E57]/50 border border-[#6F4E57]/40 py-2 px-3 rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 text-[#FAF3E0] transition-all">
+              <span>🌐 {currentLang}</span>
+              <span className="text-[10px]">▾</span>
+            </button>
+
+            {isLangOpen && (
+              <div className="absolute right-0 pt-2 w-28 z-50">
+                <div className="bg-[#3B2F2F] border border-[#6F4E57]/40 rounded-xl shadow-xl p-1.5 space-y-1">
+                  <button onClick={() => { setCurrentLang('EN'); setIsLangOpen(false); }} className={`w-full text-left px-3 py-1.5 text-xs rounded-lg transition-colors ${currentLang === 'EN' ? 'bg-[#C07C56] text-white font-bold' : 'text-[#FAF3E0]/80 hover:bg-[#6F4E57]/30'}`}>
+                    English (EN)
+                  </button>
+                  <button onClick={() => { setCurrentLang('AR'); setIsLangOpen(false); }} className={`w-full text-left px-3 py-1.5 text-xs rounded-lg transition-colors ${currentLang === 'AR' ? 'bg-[#C07C56] text-white font-bold' : 'text-[#FAF3E0]/80 hover:bg-[#6F4E57]/30'}`}>
+                    العربية (AR)
+                  </button>
+                  <button onClick={() => { setCurrentLang('ES'); setIsLangOpen(false); }} className={`w-full text-left px-3 py-1.5 text-xs rounded-lg transition-colors ${currentLang === 'ES' ? 'bg-[#C07C56] text-white font-bold' : 'text-[#FAF3E0]/80 hover:bg-[#6F4E57]/30'}`}>
+                    Español (ES)
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* USER AUTH */}
           {session ? (
             <div 
               className="relative"
@@ -149,6 +180,7 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* CART DRAWER */}
           <div 
             className="relative"
             onMouseEnter={() => setIsCartOpen(true)}
@@ -168,28 +200,42 @@ export default function Navbar() {
                   ) : (
                     <>
                       <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
-                        {cartItems.map((item) => (
-                          <div key={item.id} className="flex justify-between items-center text-sm border-b border-[#6F4E57]/20 pb-2">
-                            <div className="flex items-center space-x-2 truncate max-w-[140px]">
-                              {item.imageUrl && (
-                                <img src={item.imageUrl} alt={item.name} className="w-8 h-8 object-cover rounded-lg border border-[#6F4E57]/30 flex-shrink-0" />
-                              )}
-                              <div className="truncate">
-                                <p className="truncate text-[#FAF3E0] font-medium">{item.name}</p>
-                                <p className="text-xs text-[#C07C56] font-bold">${(item.price / 100).toFixed(2)}</p>
+                        {cartItems.map((item) => {
+                          const hasDiscount = item.discountPrice && item.discountPrice < item.price;
+                          const effectivePrice = hasDiscount ? item.discountPrice : item.price;
+
+                          return (
+                            <div key={item.id} className="flex justify-between items-center text-sm border-b border-[#6F4E57]/20 pb-2">
+                              <div className="flex items-center space-x-2 truncate max-w-[140px]">
+                                {item.imageUrl && (
+                                  <img src={item.imageUrl} alt={item.name} className="w-8 h-8 object-cover rounded-lg border border-[#6F4E57]/30 flex-shrink-0" />
+                                )}
+                                <div className="truncate">
+                                  <p className="truncate text-[#FAF3E0] font-medium">{item.name}</p>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className={`text-xs font-bold ${hasDiscount ? 'text-red-400' : 'text-[#C07C56]'}`}>
+                                      ${(effectivePrice / 100).toFixed(2)}
+                                    </p>
+                                    {hasDiscount && (
+                                      <p className="text-[10px] text-[#FAF3E0]/50 line-through">
+                                        ${(item.price / 100).toFixed(2)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1 bg-[#2c2323] rounded-lg px-1.5 py-0.5 border border-[#6F4E57]/30">
+                                  <button onClick={() => updateQuantity(item.id, -1)} className="text-[#FAF3E0]/70 hover:text-white px-1 text-xs">-</button>
+                                  <span className="w-4 text-center text-xs text-[#FAF3E0]">{item.quantity}</span>
+                                  <button onClick={() => updateQuantity(item.id, 1)} className="text-[#FAF3E0]/70 hover:text-white px-1 text-xs">+</button>
+                                </div>
+                                <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-300 text-xs font-bold px-1">✕</button>
                               </div>
                             </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <div className="flex items-center space-x-1 bg-[#2c2323] rounded-lg px-1.5 py-0.5 border border-[#6F4E57]/30">
-                                <button onClick={() => updateQuantity(item.id, -1)} className="text-[#FAF3E0]/70 hover:text-white px-1 text-xs">-</button>
-                                <span className="w-4 text-center text-xs text-[#FAF3E0]">{item.quantity}</span>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="text-[#FAF3E0]/70 hover:text-white px-1 text-xs">+</button>
-                              </div>
-                              <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-300 text-xs font-bold px-1">✕</button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="pt-2 border-t border-[#6F4E57]/30">
                         <Link href="/cart" className="block w-full text-center bg-[#C07C56] hover:bg-[#b06c48] text-white py-2 rounded-xl text-sm font-semibold transition-all shadow-sm">

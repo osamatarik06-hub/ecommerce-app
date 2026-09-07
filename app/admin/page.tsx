@@ -219,6 +219,8 @@ export default async function AdminDashboard({
     const priceDollars = parseFloat(
       (formData.get('price') as string) || '0'
     );
+    const discountPriceInput = formData.get('discountPrice') as string;
+    const discountPriceDollars = discountPriceInput ? parseFloat(discountPriceInput) : NaN;
     const image = formData.get('image') as string;
     const description = formData.get('description') as string;
     const categoryName = formData.get('category') as string;
@@ -236,6 +238,7 @@ export default async function AdminDashboard({
       data: {
         name,
         price: Math.round(priceDollars * 100),
+        discountPrice: !isNaN(discountPriceDollars) ? Math.round(discountPriceDollars * 100) : null,
         imageUrl: image,
         description,
         category: categoryRelation,
@@ -255,6 +258,8 @@ export default async function AdminDashboard({
     const priceDollars = parseFloat(
       (formData.get('price') as string) || '0'
     );
+    const discountPriceInput = formData.get('discountPrice') as string;
+    const discountPriceDollars = discountPriceInput ? parseFloat(discountPriceInput) : NaN;
     const image = formData.get('image') as string;
     const description = formData.get('description') as string;
     const categoryName = formData.get('category') as string;
@@ -274,6 +279,7 @@ export default async function AdminDashboard({
       data: {
         name,
         price: Math.round(priceDollars * 100),
+        discountPrice: !isNaN(discountPriceDollars) ? Math.round(discountPriceDollars * 100) : null,
         imageUrl: image,
         description,
         category: categoryRelation,
@@ -1698,6 +1704,21 @@ export default async function AdminDashboard({
               />
 
               <input
+                type="number"
+                step="0.01"
+                name="discountPrice"
+                placeholder="Discount Price ($)"
+                style={{
+                  background: '#09090b',
+                  border: '1px solid #3f3f46',
+                  color: '#fff',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  fontSize: '13px',
+                }}
+              />
+
+              <input
                 type="text"
                 name="image"
                 placeholder="Image URL"
@@ -1779,6 +1800,7 @@ export default async function AdminDashboard({
               >
                 <th style={{ padding: '12px 16px' }}>Product</th>
                 <th style={{ padding: '12px 16px' }}>Price</th>
+                <th style={{ padding: '12px 16px' }}>Discount Price</th>
                 <th style={{ padding: '12px 16px' }}>Description</th>
                 <th style={{ padding: '12px 16px' }}>Category</th>
                 <th style={{ padding: '12px 16px' }}>Actions</th>
@@ -1789,7 +1811,7 @@ export default async function AdminDashboard({
               {products.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     style={{
                       padding: '30px',
                       textAlign: 'center',
@@ -1854,6 +1876,30 @@ export default async function AdminDashboard({
                           borderRadius: '4px',
                           fontSize: '13px',
                           width: '80px',
+                        }}
+                      />
+                    </td>
+
+                    <td style={{ padding: '14px 16px' }}>
+                      <input
+                        form={`update-form-${product.id}`}
+                        type="number"
+                        step="0.01"
+                        name="discountPrice"
+                        defaultValue={
+                          product.discountPrice != null
+                            ? (product.discountPrice / 100).toFixed(2)
+                            : ''
+                        }
+                        placeholder="None"
+                        style={{
+                          background: '#09090b',
+                          border: '1px solid #3f3f46',
+                          color: '#fff',
+                          padding: '6px 10px',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          width: '90px',
                         }}
                       />
                     </td>
