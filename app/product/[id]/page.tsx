@@ -50,9 +50,9 @@ export default async function ProductDetailPage({
     ? product.reviews.some((r) => r.userId === currentUserId)
     : false;
 
-  // Discount validation & pricing metrics
-  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-  const effectivePrice = hasDiscount ? product.discountPrice : product.price;
+  // Discount validation & strict primitive fallback pricing metrics
+  const hasDiscount = Boolean(product.discountPrice && product.discountPrice < product.price);
+  const effectivePrice: number = hasDiscount && product.discountPrice != null ? product.discountPrice : product.price;
 
   return (
     <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col justify-between font-sans">
