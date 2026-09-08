@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
 import { Inter } from "next/font/google";
+
 import Script from "next/script";
+
 import "./globals.css";
+
 import { Providers } from "./components/Providers";
+
 import CookieBanner from "./components/CookieBanner";
+
 import Footer from "./components/Footer";
+
 import AIChatWidget from "./components/AIChatWidget";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -28,6 +35,12 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1.0,
 };
 
 export default function RootLayout({

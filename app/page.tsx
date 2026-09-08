@@ -534,7 +534,8 @@ export default async function HomePage({
 
               </div>
 
-
+		
+		
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
 
@@ -591,7 +592,6 @@ export default async function HomePage({
               </div>
 
             </section>
-
 
 
             {/* TRENDING PRODUCTS */}

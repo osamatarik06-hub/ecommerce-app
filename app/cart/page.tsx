@@ -129,7 +129,6 @@ export default function CartPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // SECURE COUPON HANDLER: Checks the database backend instead of hardcoding
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = inputCoupon.trim();
@@ -160,7 +159,6 @@ export default function CartPage() {
     }
   };
 
-  // Calculate subtotal using the effective price (discountPrice if valid, otherwise regular price)
   const subtotalAmount = cartItems.reduce((sum, item) => {
     const hasDiscount = item.discountPrice && item.discountPrice < item.price;
     const effectivePrice = hasDiscount ? item.discountPrice : item.price;
@@ -193,10 +191,10 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FAF3E0] text-[#3B2F2F] flex flex-col font-sans overflow-x-hidden">
       <Navbar />
-      <main className="max-w-3xl mx-auto p-8 space-y-6 flex-grow w-full">
-        <h1 className="text-3xl font-bold text-[#3B2F2F]">Your Shopping Cart</h1>
+      <main className="max-w-3xl mx-auto px-3 sm:px-8 py-4 sm:py-8 space-y-6 flex-grow w-full">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#3B2F2F]">Your Shopping Cart</h1>
 
         <div className="space-y-4">
           {cartItems.length === 0 ? (
@@ -207,14 +205,14 @@ export default function CartPage() {
               const effectivePrice = hasDiscount ? item.discountPrice : item.price;
 
               return (
-                <div key={item.id} className="border-b border-[#6F4E57]/20 pb-4 flex justify-between items-center">
-                  <div className="flex items-center space-x-4">
+                <div key={item.id} className="border-b border-[#6F4E57]/20 py-4 space-y-3">
+                  <div className="flex items-start space-x-3">
                     {item.imageUrl && (
-                      <img src={item.imageUrl} alt={item.name} className="w-14 h-14 object-cover rounded-xl border border-[#6F4E57]/20" />
+                      <img src={item.imageUrl} alt={item.name} className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl border border-[#6F4E57]/20 flex-shrink-0" />
                     )}
-                    <div>
-                      <h2 className="text-lg font-bold text-[#3B2F2F]">{item.name}</h2>
-                      <div className="flex items-center space-x-2">
+                    <div className="flex-grow min-w-0">
+                      <h2 className="text-sm sm:text-base font-bold text-[#3B2F2F] leading-snug">{item.name}</h2>
+                      <div className="flex items-center space-x-2 mt-1">
                         <p className={`text-xs font-bold ${hasDiscount ? 'text-red-600' : 'text-[#6F4E57]'}`}>
                           ${(effectivePrice / 100).toFixed(2)} each
                         </p>
@@ -226,14 +224,17 @@ export default function CartPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-6">
+                  
+                  <div className="flex items-center justify-between pt-2 border-t border-[#6F4E57]/10">
                     <div className="flex items-center space-x-2">
-                      <button type="button" onClick={() => updateQuantity(item.id, -1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">-</button>
-                      <span className="w-6 text-center font-medium">{item.quantity}</span>
-                      <button type="button" onClick={() => updateQuantity(item.id, 1)} className="bg-[#6F4E57]/20 hover:bg-[#6F4E57]/30 text-[#3B2F2F] px-3 py-1 rounded-lg text-sm font-semibold transition-colors">+</button>
+                      <button type="button" onClick={() => updateQuantity(item.id, -1)} className="bg-[#6F4E57]/25 hover:bg-[#6F4E57]/35 text-[#3B2F2F] px-3 py-1 rounded-lg text-xs font-semibold transition-colors">-</button>
+                      <span className="w-6 text-center font-medium text-xs">{item.quantity}</span>
+                      <button type="button" onClick={() => updateQuantity(item.id, 1)} className="bg-[#6F4E57]/25 hover:bg-[#6F4E57]/35 text-[#3B2F2F] px-3 py-1 rounded-lg text-xs font-semibold transition-colors">+</button>
                     </div>
-                    <span className="text-lg font-extrabold w-24 text-right text-[#C07C56]">${((effectivePrice * item.quantity) / 100).toFixed(2)}</span>
-                    <button type="button" onClick={() => removeItem(item.id)} className="text-red-600 hover:text-red-700 text-xs font-semibold uppercase tracking-wider">Remove</button>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-base sm:text-lg font-extrabold text-[#C07C56]">${((effectivePrice * item.quantity) / 100).toFixed(2)}</span>
+                      <button type="button" onClick={() => removeItem(item.id)} className="text-red-600 hover:text-red-700 text-xs font-semibold uppercase tracking-wider">Remove</button>
+                    </div>
                   </div>
                 </div>
               );
@@ -246,29 +247,31 @@ export default function CartPage() {
             {status === 'loading' ? (
               <p className="text-[#6F4E57]">Checking authentication status...</p>
             ) : !session ? (
-              <div className="bg-white/80 p-6 rounded-2xl border border-[#6F4E57]/20 shadow-sm text-center space-y-4">
-                <h2 className="text-xl font-bold text-[#3B2F2F]">Sign in to complete your purchase</h2>
+              <div className="bg-white/80 p-4 sm:p-6 rounded-2xl border border-[#6F4E57]/20 shadow-sm text-center space-y-4">
+                <h2 className="text-lg sm:text-xl font-bold text-[#3B2F2F]">Sign in to complete your purchase</h2>
                 <p className="text-[#6F4E57] text-xs leading-relaxed">You can browse items freely, but you need an account to proceed to checkout.</p>
-                <div className="flex justify-center space-x-4 pt-2">
-                  <Link href="/login" className="bg-[#3B2F2F] text-[#FAF3E0] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:bg-[#2c2323] transition-all shadow-md">
+                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:space-x-4 pt-2">
+                  <Link href="/login" className="bg-[#3B2F2F] text-[#FAF3E0] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:bg-[#2c2323] transition-all shadow-md text-center">
                     Sign In
                   </Link>
-                  <Link href="/signup" className="border border-[#6F4E57]/30 text-[#3B2F2F] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:border-[#6F4E57] transition-all">
+                  <Link href="/signup" className="border border-[#6F4E57]/30 text-[#3B2F2F] font-medium py-2.5 px-6 rounded-xl text-xs uppercase tracking-wider hover:border-[#6F4E57] transition-all text-center">
                     Create Account
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 bg-white/80 p-6 rounded-2xl border border-[#6F4E57]/20 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-[#3B2F2F]">Contact & Checkout</h2>
-                  <span className="text-xs text-[#6F4E57] bg-[#6F4E57]/10 px-3 py-1 rounded-full border border-[#6F4E57]/30 font-medium">Logged in as {session.user?.email}</span>
+              <div className="space-y-4 bg-white/80 p-4 sm:p-6 rounded-2xl border border-[#6F4E57]/20 shadow-sm">
+                <div className="flex flex-col space-y-2 mb-4">
+                  <h2 className="text-lg sm:text-xl font-bold text-[#3B2F2F]">Contact & Checkout</h2>
+                  <span className="text-[11px] sm:text-xs text-[#6F4E57] bg-[#6F4E57]/10 px-3 py-1.5 rounded-xl border border-[#6F4E57]/30 font-medium break-all w-full">
+                    Logged in as {session.user?.email}
+                  </span>
                 </div>
 
-                {/* Name and Email inputs */}
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" name="fullName" required placeholder="Full Name" value={formData.fullName} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
-                  <input type="email" name="email" required placeholder="Email Address" value={formData.email} onChange={handleChange} className="bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
+                {/* Name and Email inputs - Forced single column on mobile */}
+                <div className="grid grid-cols-1 gap-3">
+                  <input type="text" name="fullName" required placeholder="Full Name" value={formData.fullName} onChange={handleChange} className="w-full bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
+                  <input type="email" name="email" required placeholder="Email Address" value={formData.email} onChange={handleChange} className="w-full bg-white border border-[#6F4E57]/30 rounded-xl p-3 text-[#3B2F2F] placeholder-[#6F4E57]/60 text-sm focus:outline-none focus:border-[#6F4E57]" />
                 </div>
 
                 {/* Coupon Code Input Slot */}
@@ -285,7 +288,7 @@ export default function CartPage() {
                     <button 
                       type="button" 
                       onClick={handleApplyCoupon} 
-                      className="bg-[#6F4E57] hover:bg-[#5e4149] text-white font-semibold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm"
+                      className="bg-[#6F4E57] hover:bg-[#5e4149] text-white font-semibold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm flex-shrink-0"
                     >
                       Apply
                     </button>
@@ -300,7 +303,7 @@ export default function CartPage() {
                 {/* Payment Method Selector */}
                 <div className="border-t border-[#6F4E57]/20 pt-4 space-y-3">
                   <label className="text-sm font-bold text-[#3B2F2F] block">Select Payment Method</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                       type="button"
                       className="py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border bg-[#3B2F2F] text-[#FAF3E0] border-[#3B2F2F]"
@@ -339,12 +342,12 @@ export default function CartPage() {
                     <span className="font-mono">${shippingInDollars}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-[#6F4E57]/20">
-                    <span className="text-xl font-bold text-[#3B2F2F]">Total:</span>
-                    <span className="text-2xl font-extrabold font-mono text-[#C07C56]">${totalInDollars}</span>
+                    <span className="text-lg sm:text-xl font-bold text-[#3B2F2F]">Total:</span>
+                    <span className="text-xl sm:text-2xl font-extrabold font-mono text-[#C07C56]">${totalInDollars}</span>
                   </div>
                 </div>
 
-                {/* PayPal Buttons with Secure Order ID & Transaction ID capture */}
+                {/* PayPal Buttons */}
                 <div className="pt-2">
                   <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID! }}>
                     <PayPalButtons 

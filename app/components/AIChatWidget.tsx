@@ -51,7 +51,7 @@ export default function AIChatWidget() {
           className="flex items-center gap-2 bg-[#3B2F2F] text-[#FAF3E0] px-5 py-3.5 rounded-full shadow-lg hover:bg-[#241B1B] transition-all hover:scale-105 border border-[#D8C7B5]/30 text-xs font-bold uppercase tracking-widest"
         >
           <span>💬</span>
-          <span>Chat with AI</span>
+          <span>AI</span>
         </button>
       ) : (
         <div className="w-[360px] h-[500px] bg-[#FFFDF8] border border-[#D8C7B5] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
